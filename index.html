@@ -1175,98 +1175,88 @@ let ordineNote = {};
 let fornitoreSelezionato = null;
 
 function renderOrdini(){
-  let html = `<div class="card">
-    <div class="card-title">Seleziona Fornitore</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      ${FORNITORI.map(f=>`
-        <button onclick="selectFornitore('${f.id}')" style="padding:14px 8px;border-radius:12px;border:2px solid ${fornitoreSelezionato===f.id?'#6366f1':'#e2e8f0'};background:${fornitoreSelezionato===f.id?'#f0f0ff':'#f8fafc'};cursor:pointer;text-align:center">
-          <div style="font-size:24px">${f.emoji}</div>
-          <div style="font-size:12px;font-weight:700;color:${fornitoreSelezionato===f.id?'#6366f1':'#475569'};margin-top:4px">${f.nome}</div>
-          ${ordineAttivo[f.id]&&Object.values(ordineAttivo[f.id]).some(v=>v>0)?`<div style="font-size:10px;color:#10b981;font-weight:700;margin-top:2px">✓ Prodotti selezionati</div>`:''}
-        </button>`).join('')}
-    </div>
-  </div>`;
+  const sedeName = currentSede.admin ? 'Admin' : (DB_NAME[currentSede.id]||currentSede.name);
+  const shor = sedeName.replace('Don Basilico - ','');
+
+  let html = '<div class="card"><div class="card-title">Seleziona Fornitore</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  FORNITORI.forEach(function(f){
+    const sel = fornitoreSelezionato===f.id;
+    const hasProd = ordineAttivo[f.id] && Object.values(ordineAttivo[f.id]).some(function(v){return v>0;});
+    html += '<button onclick="selectFornitore(''+f.id+'')" style="padding:14px 8px;border-radius:12px;border:2px solid '+(sel?'#6366f1':'#e2e8f0')+';background:'+(sel?'#f0f0ff':'#f8fafc')+';cursor:pointer;text-align:center">';
+    html += '<div style="font-size:24px">'+f.emoji+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:'+(sel?'#6366f1':'#475569')+';margin-top:4px">'+f.nome+'</div>';
+    if(hasProd) html += '<div style="font-size:10px;color:#10b981;font-weight:700;margin-top:2px">✓ Selezionati</div>';
+    html += '</button>';
+  });
+  html += '</div></div>';
 
   if(fornitoreSelezionato){
-    const f = FORNITORI.find(x=>x.id===fornitoreSelezionato);
+    const f = FORNITORI.find(function(x){return x.id===fornitoreSelezionato;});
     if(!ordineAttivo[f.id]) ordineAttivo[f.id]={};
-    
-    html += `<div class="card">
-      <div class="card-title">${f.emoji} ${f.nome} — Prodotti</div>
-      ${f.prodotti.map(p=>`
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#0f172a">${p.nome}</div>
-            <div style="font-size:11px;color:#94a3b8">${p.um}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button onclick="cambiaQta('${f.id}','${p.id}',-1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#f1f5f9;font-size:18px;font-weight:800;cursor:pointer;color:#64748b">−</button>
-            <span id="qta_${f.id}_${p.id}" style="font-size:16px;font-weight:900;color:#0f172a;min-width:28px;text-align:center">${ordineAttivo[f.id][p.id]||0}</span>
-            <button onclick="cambiaQta('${f.id}','${p.id}',+1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#6366f1;font-size:18px;font-weight:800;cursor:pointer;color:#fff">+</button>
-          </div>
-        </div>`).join('')}
-    <div style="margin-top:12px">
-        <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">NOTE PER IL FORNITORE</div>
-        <textarea id="note_${f.id}" placeholder="Es: consegna mattina, chiamare prima..." 
-          style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;resize:none;outline:none;box-sizing:border-box" 
-          rows="2">${ordineNote[f.id]||''}</textarea>
-      </div>
-    </div>`;
+    html += '<div class="card"><div class="card-title">'+f.emoji+' '+f.nome+' — Prodotti</div>';
+    f.prodotti.forEach(function(p){
+      const q = ordineAttivo[f.id][p.id]||0;
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9">';
+      html += '<div><div style="font-size:13px;font-weight:700;color:#0f172a">'+p.nome+'</div>';
+      html += '<div style="font-size:11px;color:#94a3b8">'+p.um+'</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<button onclick="cambiaQta(''+f.id+'',''+p.id+'',-1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#f1f5f9;font-size:18px;font-weight:800;cursor:pointer;color:#64748b">−</button>';
+      html += '<span id="qta_'+f.id+'_'+p.id+'" style="font-size:16px;font-weight:900;color:#0f172a;min-width:28px;text-align:center">'+q+'</span>';
+      html += '<button onclick="cambiaQta(''+f.id+'',''+p.id+'',+1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#6366f1;font-size:18px;font-weight:800;cursor:pointer;color:#fff">+</button>';
+      html += '</div></div>';
+    });
+    html += '<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">NOTE PER IL FORNITORE</div>';
+    html += '<textarea id="note_'+f.id+'" placeholder="Es: consegna mattina, chiamare prima..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;resize:none;outline:none;box-sizing:border-box" rows="2">'+(ordineNote[f.id]||'')+'</textarea>';
+    html += '</div></div>';
   }
 
-  // Riepilogo ordine e bottone WhatsApp
+  // Riepilogo
   const righe = [];
-  FORNITORI.forEach(f=>{
+  FORNITORI.forEach(function(f){
     if(!ordineAttivo[f.id]) return;
-    f.prodotti.forEach(p=>{
+    f.prodotti.forEach(function(p){
       const q = ordineAttivo[f.id][p.id]||0;
       if(q>0) righe.push({fornitore:f, prodotto:p, qta:q});
     });
   });
 
   if(righe.length>0){
-    const sedeName = DB_NAME[currentSede.id] || currentSede.name;
-    const shor = sedeName.replace('Don Basilico - ','');
-    
-    // Raggruppa per fornitore
     const perFornitore = {};
-    righe.forEach(r=>{
+    righe.forEach(function(r){
       if(!perFornitore[r.fornitore.id]) perFornitore[r.fornitore.id]={f:r.fornitore, righe:[]};
       perFornitore[r.fornitore.id].righe.push(r);
     });
 
-    html += `<div class="card" style="border-color:#10b98133">
-      <div class="card-title" style="color:#10b981">🛒 Riepilogo Ordine</div>
-      ${Object.values(perFornitore).map(({f,righe:rr})=>`
-        <div style="margin-bottom:12px">
-          <div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:6px">${f.emoji} ${f.nome}</div>
-          ${rr.map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
-            <span style="color:#0f172a">${r.prodotto.nome}</span>
-            <span style="font-weight:800;color:#6366f1">${r.qta} ${r.prodotto.um}</span>
-          </div>`).join('')}
-        </div>`).join('')}
-      <div style="display:flex;gap:8px;margin-top:8px">
-        ${Object.values(perFornitore).map(({f,righe:rr})=>{
-          // Salva nota corrente se visibile
-          const noteEl = document.getElementById(`note_${f.id}`);
-          if(noteEl) ordineNote[f.id] = noteEl.value;
-          const nota = ordineNote[f.id] ? `
+    html += '<div class="card" style="border-color:#10b98133"><div class="card-title" style="color:#10b981">🛒 Riepilogo Ordine</div>';
+    Object.values(perFornitore).forEach(function(obj){
+      html += '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:6px">'+obj.f.emoji+' '+obj.f.nome+'</div>';
+      obj.righe.forEach(function(r){
+        html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#0f172a">'+r.prodotto.nome+'</span><span style="font-weight:800;color:#6366f1">'+r.qta+' '+r.prodotto.um+'</span></div>';
+      });
+      html += '</div>';
+    });
 
-📝 Note: ${ordineNote[f.id]}` : '';
-          const msg = encodeURIComponent(`Ciao, ordine per ${shor}:
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">';
+    Object.values(perFornitore).forEach(function(obj){
+      const noteEl = document.getElementById('note_'+obj.f.id);
+      if(noteEl) ordineNote[obj.f.id] = noteEl.value;
+      const nota = ordineNote[obj.f.id] ? '
 
-${rr.map(r=>`- ${r.prodotto.nome}: ${r.qta} ${r.prodotto.um}`).join('
-')}${nota}
+📝 Note: '+ordineNote[obj.f.id] : '';
+      let msgTxt = 'Ciao, ordine per '+shor+':
 
-Grazie!`);
-          const tel = f.tel || '';
-          return `<button onclick="window.open('https://wa.me/${tel}?text=${msg}','_blank')" style="flex:1;padding:12px 8px;border-radius:12px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer">
-            📱 WhatsApp<br><span style="font-size:10px;opacity:.9">${f.emoji} ${f.nome}</span>
-          </button>`;
-        }).join('')}
-      </div>
-      <button onclick="resetOrdine()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#fee2e2;color:#ef4444;font-size:13px;font-weight:800;cursor:pointer">🗑️ Azzera ordine</button>
-    </div>`;
+';
+      obj.righe.forEach(function(r){ msgTxt += '- '+r.prodotto.nome+': '+r.qta+' '+r.prodotto.um+'
+'; });
+      msgTxt += nota+'
+Grazie!';
+      const tel = obj.f.tel||'';
+      const msg = encodeURIComponent(msgTxt);
+      html += '<button onclick="window.open('https://wa.me/'+tel+'?text='+msg+'','_blank')" style="flex:1;min-width:120px;padding:12px 8px;border-radius:12px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer">📱 WhatsApp '+obj.f.emoji+' '+obj.f.nome+'</button>';
+    });
+    html += '</div>';
+    html += '<button onclick="resetOrdine()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#fee2e2;color:#ef4444;font-size:13px;font-weight:800;cursor:pointer">🗑️ Azzera ordine</button>';
+    html += '</div>';
   }
 
   $('mainContent').innerHTML = html;
