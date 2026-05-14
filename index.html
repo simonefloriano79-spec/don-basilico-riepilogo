@@ -167,7 +167,7 @@ async function dbSelect(table, params={}) {
 }
 
 async function dbUpsert(table, row) {
-  const url = `${SUPA_URL}/rest/v1/${table}?on_conflict=pizzeria,date`;
+  const url = `${SUPA_URL}/rest/v1/${table}`;
   const r = await fetch(url, {
     method: 'POST',
     headers: {
@@ -175,7 +175,8 @@ async function dbUpsert(table, row) {
       'Authorization': `Bearer ${SUPA_KEY}`,
       'Content-Profile': 'riepiloghi',
       'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates'
+      'Prefer': 'return=minimal,resolution=merge-duplicates',
+      'on_conflict': 'pizzeria,date'
     },
     body: JSON.stringify(row)
   });
@@ -450,10 +451,13 @@ async function saveForm(){
     spese: parseFloat($('f_spese').value)||0,
     note: $('f_note').value,
   };
-  let error=null;
-  try { await dbUpsert('daily', row); } catch(e) { error={message:e.message}; }
-  if(error){toast('Errore: '+error.message,'#ef4444');}
-  else{toast('✓ Salvato!'); showTab('stats');}
+  try { 
+    await dbUpsert('daily', row);
+    toast('✓ Salvato!'); 
+    showTab('stats');
+  } catch(e) { 
+    toast('Errore: '+e.message,'#ef4444');
+  }
   btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
 }
 
