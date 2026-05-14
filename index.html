@@ -1113,7 +1113,7 @@ async function loadForEdit(pizzeria, date){
 // ─── ORDINI ──────────────────────────────────────────────────────────────────
 const FORNITORI = [
   {
-    id: 'natural', nome: 'Natural', emoji: '🌾',
+    id: 'natural', nome: 'Natural', emoji: '🌾', tel: '393458101699',
     prodotti: [
       {id:'farina',    nome:'Farina',              um:'sacchi'},
       {id:'ventricina',nome:'Ventricina (2.5kg)',   um:'pezzo'},
@@ -1122,7 +1122,7 @@ const FORNITORI = [
     ]
   },
   {
-    id: 'tutto_carta', nome: 'Tutto Carta', emoji: '📦',
+    id: 'tutto_carta', nome: 'Tutto Carta', emoji: '📦', tel: '393518201926',
     prodotti: [
       {id:'box_pizza',     nome:'Box Pizza',                    um:'pz (100 cartoni)'},
       {id:'box_calzone',   nome:'Box Cartoni Calzone',          um:'pz (50 pezzi)'},
@@ -1132,7 +1132,7 @@ const FORNITORI = [
     ]
   },
   {
-    id: 'bevande', nome: 'Bevande (Vicentini)', emoji: '🥤',
+    id: 'bevande', nome: 'Bevande (Vicentini)', emoji: '🥤', tel: '393458101699',
     prodotti: [
       {id:'acqua_liscia',  nome:'Acqua Liscia',              um:'pz (24 bottiglie)'},
       {id:'acqua_frizzante',nome:'Acqua Frizzante',          um:'pz (24 bottiglie)'},
@@ -1142,7 +1142,7 @@ const FORNITORI = [
     ]
   },
   {
-    id: 'verdure', nome: 'Verdure', emoji: '🥦',
+    id: 'verdure', nome: 'Verdure', emoji: '🥦', tel: '393518201926',
     prodotti: [
       {id:'melanzane', nome:'Melanzane', um:'kg'},
       {id:'patate',    nome:'Patate',    um:'kg'},
@@ -1154,7 +1154,7 @@ const FORNITORI = [
     ]
   },
   {
-    id: 'fritti', nome: 'Fritti', emoji: '🍟',
+    id: 'fritti', nome: 'Fritti', emoji: '🍟', tel: '393458101699',
     prodotti: [
       {id:'crocchette', nome:'Crocchette di Patate', um:'pz'},
       {id:'suppli',     nome:'Supplì di Riso',       um:'pz'},
@@ -1162,7 +1162,7 @@ const FORNITORI = [
     ]
   },
   {
-    id: 'salsiccia', nome: 'Salsiccia', emoji: '🌭',
+    id: 'salsiccia', nome: 'Salsiccia', emoji: '🌭', tel: '393518201926',
     prodotti: [
       {id:'salsiccia_fresca', nome:'Salsiccia Fresca', um:'kg'},
       {id:'salsiccia_stagionata', nome:'Salsiccia Stagionata', um:'kg'},
@@ -1170,7 +1170,8 @@ const FORNITORI = [
   },
 ];
 
-let ordineAttivo = {}; // {fornitore_id: {prodotto_id: quantita}}
+let ordineAttivo = {};
+let ordineNote = {};
 let fornitoreSelezionato = null;
 
 function renderOrdini(){
@@ -1204,6 +1205,12 @@ function renderOrdini(){
             <button onclick="cambiaQta('${f.id}','${p.id}',+1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#6366f1;font-size:18px;font-weight:800;cursor:pointer;color:#fff">+</button>
           </div>
         </div>`).join('')}
+    <div style="margin-top:12px">
+        <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">NOTE PER IL FORNITORE</div>
+        <textarea id="note_${f.id}" placeholder="Es: consegna mattina, chiamare prima..." 
+          style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;resize:none;outline:none;box-sizing:border-box" 
+          rows="2">${ordineNote[f.id]||''}</textarea>
+      </div>
     </div>`;
   }
 
@@ -1240,13 +1247,20 @@ function renderOrdini(){
         </div>`).join('')}
       <div style="display:flex;gap:8px;margin-top:8px">
         ${Object.values(perFornitore).map(({f,righe:rr})=>{
+          // Salva nota corrente se visibile
+          const noteEl = document.getElementById(`note_${f.id}`);
+          if(noteEl) ordineNote[f.id] = noteEl.value;
+          const nota = ordineNote[f.id] ? `
+
+📝 Note: ${ordineNote[f.id]}` : '';
           const msg = encodeURIComponent(`Ciao, ordine per ${shor}:
 
 ${rr.map(r=>`- ${r.prodotto.nome}: ${r.qta} ${r.prodotto.um}`).join('
-')}
+')}${nota}
 
 Grazie!`);
-          return `<button onclick="window.open('https://wa.me/?text=${msg}','_blank')" style="flex:1;padding:12px 8px;border-radius:12px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer">
+          const tel = f.tel || '';
+          return `<button onclick="window.open('https://wa.me/${tel}?text=${msg}','_blank')" style="flex:1;padding:12px 8px;border-radius:12px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer">
             📱 WhatsApp<br><span style="font-size:10px;opacity:.9">${f.emoji} ${f.nome}</span>
           </button>`;
         }).join('')}
@@ -1259,6 +1273,11 @@ Grazie!`);
 }
 
 function selectFornitore(id){
+  // Salva note del fornitore corrente prima di cambiare
+  if(fornitoreSelezionato){
+    const noteEl = document.getElementById(`note_${fornitoreSelezionato}`);
+    if(noteEl) ordineNote[fornitoreSelezionato] = noteEl.value;
+  }
   fornitoreSelezionato = fornitoreSelezionato===id ? null : id;
   renderOrdini();
 }
@@ -1276,6 +1295,7 @@ function cambiaQta(fId, pId, delta){
 
 function resetOrdine(){
   ordineAttivo={};
+  ordineNote={};
   fornitoreSelezionato=null;
   renderOrdini();
 }
