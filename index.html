@@ -773,16 +773,23 @@ async function saveForm(){
   const btn=$('saveBtn'); btn.disabled=true; btn.textContent='Salvataggio...';
   const sedeId = currentSede.admin ? $('f_sede').value : currentSede.id;
 
-  // Blocco 48h per i gestori (non admin)
+  // Blocco 48h per i gestori (non admin) — basato su created_at del record
   if(!currentSede.admin) {
-    const selectedDate = new Date($('f_date').value);
-    const now = new Date();
-    const diffHours = (now - selectedDate) / (1000 * 60 * 60);
-    if(diffHours > 48) {
-      toast('⛔ Oltre 48h — solo Admin può modificare', '#ef4444');
-      btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
-      return;
-    }
+    const sedeId2 = currentSede.id;
+    const dateVal = $('f_date').value;
+    try {
+      const existing = await dbSelect('riepilogo_daily', {eq:{pizzeria:DB_NAME[sedeId2],date:dateVal}});
+      if(existing && existing.length > 0) {
+        const createdAt = new Date(existing[0].created_at);
+        const now = new Date();
+        const diffHours = (now - createdAt) / (1000 * 60 * 60);
+        if(diffHours > 48) {
+          toast('⛔ Salvato da oltre 48h — solo Admin può modificare', '#ef4444');
+          btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
+          return;
+        }
+      }
+    } catch(e) {}
   }
   const row={
     pizzeria: DB_NAME[sedeId],
