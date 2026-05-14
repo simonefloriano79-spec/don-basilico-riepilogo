@@ -146,7 +146,9 @@ textarea.fi{resize:vertical}
 <script>
 const SUPA_URL = 'https://wgvuhjfszfzmzlhvizph.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnVoamZzemZ6bXpsaHZpenBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTk4NjAsImV4cCI6MjA5NDA5NTg2MH0.7E9gQEbz8qEAsXX5wzTBKnTAOPRDvE601REGlqnsCNo';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  db: { schema: 'riepiloghi' }
+});
 
 // ─── SEDI + PIN ───────────────────────────────────────────────────────────────
 // PIN: cambia questi come vuoi!
@@ -274,7 +276,7 @@ function toast(msg,color='#10b981'){
 async function renderStats(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center;font-size:14px">⏳ Caricamento...</div>';
   const isAdmin = currentSede.admin;
-  let q = sb.schema('riepiloghi').from('daily').select('*').order('date',{ascending:false}).limit(300);
+  let q = sb.from('daily').select('*').order('date',{ascending:false}).limit(300);
   if(!isAdmin) q=q.eq('pizzeria', DB_NAME[currentSede.id]);
   const {data:rows,error}=await q;
   if(error){$('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444;font-size:13px">${error.message}</p></div>`;return;}
@@ -404,7 +406,7 @@ async function saveForm(){
     spese: parseFloat($('f_spese').value)||0,
     note: $('f_note').value,
   };
-  const {error}=await sb.schema('riepiloghi').from('daily').upsert(row,{onConflict:'pizzeria,date'});
+  const {error}=await sb.from('daily').upsert(row,{onConflict:'pizzeria,date'});
   if(error){toast('Errore: '+error.message,'#ef4444');}
   else{toast('✓ Salvato!'); showTab('stats');}
   btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
@@ -413,7 +415,7 @@ async function saveForm(){
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 async function renderAdmin(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
-  const {data:rows}=await sb.schema('riepiloghi').from('daily').select('*').order('date',{ascending:false}).limit(500);
+  const {data:rows}=await sb.from('daily').select('*').order('date',{ascending:false}).limit(500);
   
   const totale=rows?.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0)||0;
   let html=`<div class="card"><div class="card-title">Riepilogo Generale</div>
