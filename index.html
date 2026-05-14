@@ -144,6 +144,7 @@ textarea.fi{resize:vertical}
     <div class="tab active" onclick="showTab('stats')" id="tab-stats">📊 Stats</div>
     <div class="tab" onclick="showTab('storico')" id="tab-storico">📋 Storico</div>
     <div class="tab" onclick="showTab('form')" id="tab-form">📝 Inserisci</div>
+    <div class="tab" onclick="showTab('ordini')" id="tab-ordini">🛒 Ordini</div>
   </div>
   <div class="content" id="mainContent"></div>
 </div>
@@ -296,6 +297,7 @@ function showTab(t){
   if(t==='stats') renderStats();
   else if(t==='storico') renderStorico();
   else if(t==='form') renderForm();
+  else if(t==='ordini') renderOrdini();
   else if(t==='admin') renderAdmin();
 }
 
@@ -1108,6 +1110,177 @@ async function loadForEdit(pizzeria, date){
   }, 300);
 }
 
+// ─── ORDINI ──────────────────────────────────────────────────────────────────
+const FORNITORI = [
+  {
+    id: 'natural', nome: 'Natural', emoji: '🌾',
+    prodotti: [
+      {id:'farina',    nome:'Farina',              um:'sacchi'},
+      {id:'ventricina',nome:'Ventricina (2.5kg)',   um:'pezzo'},
+      {id:'edamer',    nome:'Edamer',               um:'pezzo'},
+      {id:'cotto',     nome:'Cotto',                um:'pezzo'},
+    ]
+  },
+  {
+    id: 'tutto_carta', nome: 'Tutto Carta', emoji: '📦',
+    prodotti: [
+      {id:'box_pizza',     nome:'Box Pizza',                    um:'pz (100 cartoni)'},
+      {id:'box_calzone',   nome:'Box Cartoni Calzone',          um:'pz (50 pezzi)'},
+      {id:'sacch_fritti_s',nome:'Sacchetti Fritti Piccoli',     um:'pz (1 cartone)'},
+      {id:'sacch_fritti_g',nome:'Sacchetti Fritti Grandi',      um:'pz (1 cartone)'},
+      {id:'shopper',       nome:'Shopper',                      um:'pz (1 cartone)'},
+    ]
+  },
+  {
+    id: 'bevande', nome: 'Bevande (Vicentini)', emoji: '🥤',
+    prodotti: [
+      {id:'acqua_liscia',  nome:'Acqua Liscia',              um:'pz (24 bottiglie)'},
+      {id:'acqua_frizzante',nome:'Acqua Frizzante',          um:'pz (24 bottiglie)'},
+      {id:'birra_heineken',nome:'Birra Heineken 0.66',       um:'pz (15 bottiglie)'},
+      {id:'birra_moretti', nome:'Birra Moretti',             um:'pz (15 bottiglie)'},
+      {id:'coca_cola',     nome:'Coca Cola Vetro 0.33',      um:'pz (24 bottiglie)'},
+    ]
+  },
+  {
+    id: 'verdure', nome: 'Verdure', emoji: '🥦',
+    prodotti: [
+      {id:'melanzane', nome:'Melanzane', um:'kg'},
+      {id:'patate',    nome:'Patate',    um:'kg'},
+      {id:'zucchine',  nome:'Zucchine',  um:'kg'},
+      {id:'peperoni',  nome:'Peperoni',  um:'kg'},
+      {id:'pachino',   nome:'Pachino',   um:'kg'},
+      {id:'basilico',  nome:'Basilico',  um:'mazzo'},
+      {id:'rucola',    nome:'Rucola',    um:'mazzo'},
+    ]
+  },
+  {
+    id: 'fritti', nome: 'Fritti', emoji: '🍟',
+    prodotti: [
+      {id:'crocchette', nome:'Crocchette di Patate', um:'pz'},
+      {id:'suppli',     nome:'Supplì di Riso',       um:'pz'},
+      {id:'arancino',   nome:'Arancino al Ragù',     um:'pz'},
+    ]
+  },
+  {
+    id: 'salsiccia', nome: 'Salsiccia', emoji: '🌭',
+    prodotti: [
+      {id:'salsiccia_fresca', nome:'Salsiccia Fresca', um:'kg'},
+      {id:'salsiccia_stagionata', nome:'Salsiccia Stagionata', um:'kg'},
+    ]
+  },
+];
+
+let ordineAttivo = {}; // {fornitore_id: {prodotto_id: quantita}}
+let fornitoreSelezionato = null;
+
+function renderOrdini(){
+  let html = `<div class="card">
+    <div class="card-title">Seleziona Fornitore</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${FORNITORI.map(f=>`
+        <button onclick="selectFornitore('${f.id}')" style="padding:14px 8px;border-radius:12px;border:2px solid ${fornitoreSelezionato===f.id?'#6366f1':'#e2e8f0'};background:${fornitoreSelezionato===f.id?'#f0f0ff':'#f8fafc'};cursor:pointer;text-align:center">
+          <div style="font-size:24px">${f.emoji}</div>
+          <div style="font-size:12px;font-weight:700;color:${fornitoreSelezionato===f.id?'#6366f1':'#475569'};margin-top:4px">${f.nome}</div>
+          ${ordineAttivo[f.id]&&Object.values(ordineAttivo[f.id]).some(v=>v>0)?`<div style="font-size:10px;color:#10b981;font-weight:700;margin-top:2px">✓ Prodotti selezionati</div>`:''}
+        </button>`).join('')}
+    </div>
+  </div>`;
+
+  if(fornitoreSelezionato){
+    const f = FORNITORI.find(x=>x.id===fornitoreSelezionato);
+    if(!ordineAttivo[f.id]) ordineAttivo[f.id]={};
+    
+    html += `<div class="card">
+      <div class="card-title">${f.emoji} ${f.nome} — Prodotti</div>
+      ${f.prodotti.map(p=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#0f172a">${p.nome}</div>
+            <div style="font-size:11px;color:#94a3b8">${p.um}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="cambiaQta('${f.id}','${p.id}',-1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#f1f5f9;font-size:18px;font-weight:800;cursor:pointer;color:#64748b">−</button>
+            <span id="qta_${f.id}_${p.id}" style="font-size:16px;font-weight:900;color:#0f172a;min-width:28px;text-align:center">${ordineAttivo[f.id][p.id]||0}</span>
+            <button onclick="cambiaQta('${f.id}','${p.id}',+1)" style="width:32px;height:32px;border-radius:8px;border:none;background:#6366f1;font-size:18px;font-weight:800;cursor:pointer;color:#fff">+</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // Riepilogo ordine e bottone WhatsApp
+  const righe = [];
+  FORNITORI.forEach(f=>{
+    if(!ordineAttivo[f.id]) return;
+    f.prodotti.forEach(p=>{
+      const q = ordineAttivo[f.id][p.id]||0;
+      if(q>0) righe.push({fornitore:f, prodotto:p, qta:q});
+    });
+  });
+
+  if(righe.length>0){
+    const sedeName = DB_NAME[currentSede.id] || currentSede.name;
+    const shor = sedeName.replace('Don Basilico - ','');
+    
+    // Raggruppa per fornitore
+    const perFornitore = {};
+    righe.forEach(r=>{
+      if(!perFornitore[r.fornitore.id]) perFornitore[r.fornitore.id]={f:r.fornitore, righe:[]};
+      perFornitore[r.fornitore.id].righe.push(r);
+    });
+
+    html += `<div class="card" style="border-color:#10b98133">
+      <div class="card-title" style="color:#10b981">🛒 Riepilogo Ordine</div>
+      ${Object.values(perFornitore).map(({f,righe:rr})=>`
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:6px">${f.emoji} ${f.nome}</div>
+          ${rr.map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
+            <span style="color:#0f172a">${r.prodotto.nome}</span>
+            <span style="font-weight:800;color:#6366f1">${r.qta} ${r.prodotto.um}</span>
+          </div>`).join('')}
+        </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        ${Object.values(perFornitore).map(({f,righe:rr})=>{
+          const msg = encodeURIComponent(`Ciao, ordine per ${shor}:
+
+${rr.map(r=>`- ${r.prodotto.nome}: ${r.qta} ${r.prodotto.um}`).join('
+')}
+
+Grazie!`);
+          return `<button onclick="window.open('https://wa.me/?text=${msg}','_blank')" style="flex:1;padding:12px 8px;border-radius:12px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:800;cursor:pointer">
+            📱 WhatsApp<br><span style="font-size:10px;opacity:.9">${f.emoji} ${f.nome}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      <button onclick="resetOrdine()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#fee2e2;color:#ef4444;font-size:13px;font-weight:800;cursor:pointer">🗑️ Azzera ordine</button>
+    </div>`;
+  }
+
+  $('mainContent').innerHTML = html;
+}
+
+function selectFornitore(id){
+  fornitoreSelezionato = fornitoreSelezionato===id ? null : id;
+  renderOrdini();
+}
+
+function cambiaQta(fId, pId, delta){
+  if(!ordineAttivo[fId]) ordineAttivo[fId]={};
+  const nuova = Math.max(0, (ordineAttivo[fId][pId]||0) + delta);
+  ordineAttivo[fId][pId] = nuova;
+  const el = document.getElementById(`qta_${fId}_${pId}`);
+  if(el) el.textContent = nuova;
+  // Aggiorna riepilogo se visibile
+  const hasItems = Object.values(ordineAttivo).some(f=>Object.values(f).some(v=>v>0));
+  if(hasItems) renderOrdini();
+}
+
+function resetOrdine(){
+  ordineAttivo={};
+  fornitoreSelezionato=null;
+  renderOrdini();
+}
+
+// ─── ADMIN ───────────────────────────────────────────────────────────────────
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 async function renderAdmin(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
