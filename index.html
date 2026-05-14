@@ -527,9 +527,22 @@ function renderForm(){
   </div>
   <div class="card">
     <div class="card-title">Produzione</div>
+    <div class="row3">
+      <div><div class="fl">PIZZE PIATTO</div><input class="fi" type="number" id="f_pizze_piatto" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">PIZZE MAXI</div><input class="fi" type="number" id="f_pizze_maxi" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">PIZZE BABY</div><input class="fi" type="number" id="f_pizze_baby" placeholder="0" inputmode="numeric"></div>
+    </div>
     <div class="row2">
-      <div><div class="fl">PIZZE PIZ.</div><input class="fi" type="number" id="f_pizze" placeholder="0" inputmode="numeric"></div>
-      <div><div class="fl">PIZZE JE</div><input class="fi" type="number" id="f_pizze_je" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">CONSEGNE JUST EAT</div><input class="fi" type="number" id="f_cons_je" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">CONSEGNE PIZZERIA</div><input class="fi" type="number" id="f_cons_piz" placeholder="0" inputmode="numeric"></div>
+    </div>
+    <div class="row2">
+      <div><div class="fl">PIZZE PIZZERIA</div><input class="fi" type="number" id="f_pizze" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">PIZZE JUST EAT</div><input class="fi" type="number" id="f_pizze_je" placeholder="0" inputmode="numeric"></div>
+    </div>
+    <div class="row2">
+      <div><div class="fl">COMANDE PV</div><input class="fi" type="number" id="f_comande_pv" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">NUM PIZZE PV</div><input class="fi" type="number" id="f_num_pizze_pv" placeholder="0" inputmode="numeric"></div>
     </div>
   </div>
   <div class="card">
@@ -567,8 +580,15 @@ async function saveForm(){
     annullati: parseInt($('f_ann').value)||0,
     consegne_just_eat: parseInt($('f_cons_je').value)||0,
     consegne_pizzeria: parseInt($('f_cons_piz').value)||0,
+    pizze_piatto: parseInt($('f_pizze_piatto').value)||0,
+    pizze_maxi: parseInt($('f_pizze_maxi').value)||0,
+    pizze_baby: parseInt($('f_pizze_baby').value)||0,
+    consegne_just_eat: parseInt($('f_cons_je').value)||0,
+    consegne_pizzeria: parseInt($('f_cons_piz').value)||0,
     pizze_pizzeria: parseInt($('f_pizze').value)||0,
     pizze_just_eat: parseInt($('f_pizze_je').value)||0,
+    comande_pv: parseInt($('f_comande_pv').value)||0,
+    num_pizze_pv: parseInt($('f_num_pizze_pv').value)||0,
     incasso: parseFloat($('f_inc').value)||0,
     incasso_just_eat: parseFloat($('f_inc_je').value)||0,
     chiusura_fiscale: parseFloat($('f_imp').value)||0,
