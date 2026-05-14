@@ -398,7 +398,7 @@ async function renderStats(){
   const totComande = rows.reduce((s,r)=>s+(parseInt(r.comande_pv)||0),0);
   const giorni     = rows.length;
   const mediaGiorno = giorni>0 ? totIncTot/giorni : 0;
-  const vmPizza    = totPizze>0 ? totInc/totPizze : 0;
+  const vmPizza    = totPizPiz>0 ? totInc/totPizPiz : 0;
   const bnAvg      = rows.reduce((s,r)=>{
     const inc=parseFloat(r.incasso)||0, cf=parseFloat(r.chiusura_fiscale)||0;
     return s+(cf>0?Math.abs((inc-cf)/cf*100):0);
@@ -744,9 +744,10 @@ function renderForm(){
     const maxi  = parseInt($('f_pizze_maxi')?.value)||0;
     const tot = je + cons + pv + baby + (maxi * 2);
     if($('f_tot_pizze')) $('f_tot_pizze').textContent = tot;
-    // Valore medio pizza = incasso / totale pizze
+    // Valore medio pizza = incasso / pizze pizzeria (consegnate)
     const incasso = parseFloat($('f_inc')?.value)||0;
-    const vm = tot > 0 ? (incasso / tot) : 0;
+    const pizzePiz = parseInt($('f_pizze')?.value)||0;
+    const vm = pizzePiz > 0 ? (incasso / pizzePiz) : 0;
     if($('f_valore_medio')) $('f_valore_medio').textContent = '€ ' + vm.toFixed(2);
     // B/N = (incasso - chiusura fiscale) / chiusura fiscale * 100
     const chiusura = parseFloat($('f_imp')?.value)||0;
