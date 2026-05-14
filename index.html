@@ -567,9 +567,7 @@ function renderForm(){
       <div><div class="fl">MONETE €</div><input class="fi" type="number" id="f_monete" placeholder="0.00" step="0.01" inputmode="decimal"></div>
       <div><div class="fl">PAC €</div><input class="fi" type="number" id="f_pac" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
-    <div class="row2">
-      <div><div class="fl">SPESE €</div><input class="fi" type="number" id="f_spese" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-    </div>
+
     <div style="margin-top:8px">
       <div class="fl">VALORE MEDIO PIZZA</div>
       <div id="f_valore_medio" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #10b981;background:#f0fdf4;color:#047857;font-size:18px;font-weight:900;text-align:center">€ 0.00</div>
@@ -579,11 +577,70 @@ function renderForm(){
       <div id="f_bn" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #10b981;background:#f0fdf4;color:#047857;font-size:18px;font-weight:900;text-align:center">0.00%</div>
     </div>
   </div>
+  <div class="card" id="speseCard">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Spese</span>
+      <button onclick="addSpesa()" style="padding:6px 14px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:12px;font-weight:800;cursor:pointer">+ Aggiungi Spesa</button>
+    </div>
+    <div id="speseList"></div>
+    <div style="margin-top:10px;padding:10px;border-radius:10px;border:1.5px solid #6366f1;background:#f0f0ff;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:700;color:#6366f1">TOTALE SPESE</span>
+      <span id="speseTotal" style="font-size:18px;font-weight:900;color:#4338ca">€ 0.00</span>
+    </div>
+  </div>
   <div class="card">
     <div class="card-title">Note</div>
     <textarea class="fi" id="f_note" rows="3" placeholder="Note del giorno..."></textarea>
   </div>
   <button class="save-btn" id="saveBtn" onclick="saveForm()">💾 Salva Riepilogo</button>`;
+
+  // ── SPESE DINAMICHE ──────────────────────────────
+  const CATEGORIE_SPESE = ['Natural','Tutto Carta','Bevande','Verdura','Fritti','Salsiccia','Stipendi','Altro'];
+  let speseItems = [];
+
+  function renderSpese(){
+    const list = $('speseList');
+    if(!list) return;
+    if(speseItems.length===0){
+      list.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px 0">Nessuna spesa aggiunta</div>';
+    } else {
+      list.innerHTML = speseItems.map((s,i)=>`
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <select onchange="speseItems[${i}].cat=this.value" style="flex:1.5;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;outline:none">
+            ${CATEGORIE_SPESE.map(c=>`<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+          <input type="number" value="${s.val}" placeholder="0.00" step="0.01" inputmode="decimal"
+            onchange="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
+            oninput="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
+            style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none;width:0">
+          <button onclick="removeSpesa(${i})" style="padding:6px 10px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:14px;cursor:pointer;font-weight:800;flex-shrink:0">✕</button>
+        </div>`).join('');
+    }
+    updateSpeseTotal();
+  }
+
+  function addSpesa(){
+    speseItems.push({cat:'Natural', val:0});
+    renderSpese();
+  }
+
+  function removeSpesa(i){
+    speseItems.splice(i,1);
+    renderSpese();
+  }
+
+  function updateSpeseTotal(){
+    const tot = speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+    const el = $('speseTotal');
+    if(el) el.textContent = '€ ' + tot.toFixed(2);
+  }
+
+  function getSpeseTotal(){
+    return speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  }
+
+  speseItems = [];
+  renderSpese();
 
   // Auto-calc totale pizze
   const calcFields = ['f_pizze_je','f_pizze','f_num_pizze_pv','f_pizze_baby','f_pizze_maxi'];
@@ -664,7 +721,8 @@ async function saveForm(){
     banconote: parseFloat($('f_cont').value)||0,
     monete: parseFloat($('f_monete').value)||0,
     pac: parseFloat($('f_pac').value)||0,
-    spese: parseFloat($('f_spese').value)||0,
+    spese: getSpeseTotal(),
+    spese_dettaglio: JSON.stringify(speseItems),
     note: $('f_note').value,
   };
   try { 
