@@ -147,7 +147,10 @@ textarea.fi{resize:vertical}
 const SUPA_URL = 'https://wgvuhjfszfzmzlhvizph.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnVoamZzemZ6bXpsaHZpenBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTk4NjAsImV4cCI6MjA5NDA5NTg2MH0.7E9gQEbz8qEAsXX5wzTBKnTAOPRDvE601REGlqnsCNo';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  db: { schema: 'riepiloghi' }
+  db: { schema: 'riepiloghi' },
+  global: {
+    headers: { 'Accept-Profile': 'riepiloghi', 'Content-Profile': 'riepiloghi' }
+  }
 });
 
 // ─── SEDI + PIN ───────────────────────────────────────────────────────────────
