@@ -309,7 +309,7 @@ function toast(msg,color='#10b981'){
 async function renderStats(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center;font-size:14px">⏳ Caricamento...</div>';
   const isAdmin = currentSede.admin;
-  let q = sb.from('daily').select('*').order('date',{ascending:false}).limit(300);
+  // query via REST API
   let rows, error_msg;
   try {
     const params = {order:'date.desc', limit:300};
@@ -444,7 +444,8 @@ async function saveForm(){
     spese: parseFloat($('f_spese').value)||0,
     note: $('f_note').value,
   };
-  const {error}=await sb.from('daily').upsert(row,{onConflict:'pizzeria,date'});
+  let error=null;
+  try { await dbUpsert('daily', row); } catch(e) { error={message:e.message}; }
   if(error){toast('Errore: '+error.message,'#ef4444');}
   else{toast('✓ Salvato!'); showTab('stats');}
   btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
@@ -453,7 +454,8 @@ async function saveForm(){
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 async function renderAdmin(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
-  const {data:rows}=await sb.from('daily').select('*').order('date',{ascending:false}).limit(500);
+  let rows=[];
+  try { rows = await dbSelect('daily', {order:'date.desc', limit:500}); } catch(e) {}
   
   const totale=rows?.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0)||0;
   let html=`<div class="card"><div class="card-title">Riepilogo Generale</div>
