@@ -148,20 +148,22 @@ const SUPA_URL = 'https://wgvuhjfszfzmzlhvizph.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnVoamZzemZ6bXpsaHZpenBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTk4NjAsImV4cCI6MjA5NDA5NTg2MH0.7E9gQEbz8qEAsXX5wzTBKnTAOPRDvE601REGlqnsCNo';
 // Direct REST API - no supabase client needed
 async function dbSelect(table, params={}) {
-  let url = `${SUPA_URL}/rest/v1/${table}?`;
   const qp = [];
   if(params.eq) Object.entries(params.eq).forEach(([k,v]) => qp.push(`${k}=eq.${encodeURIComponent(v)}`));
   if(params.order) qp.push(`order=${params.order}`);
   if(params.limit) qp.push(`limit=${params.limit}`);
-  url += qp.join('&');
+  qp.push('select=*');
+  const url = `${SUPA_URL}/rest/v1/${table}?${qp.join('&')}`;
+  console.log('Fetching:', url);
   const r = await fetch(url, { headers: {
     'apikey': SUPA_KEY,
     'Authorization': `Bearer ${SUPA_KEY}`,
-    'Accept-Profile': 'riepiloghi',
-    'Content-Type': 'application/json'
+    'Accept-Profile': 'riepiloghi'
   }});
-  if(!r.ok) { const e=await r.text(); throw new Error(e); }
-  return r.json();
+  const text = await r.text();
+  console.log('Response:', r.status, text.slice(0,200));
+  if(!r.ok) throw new Error(text);
+  return JSON.parse(text);
 }
 
 async function dbUpsert(table, row) {
