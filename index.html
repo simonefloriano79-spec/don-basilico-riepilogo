@@ -316,8 +316,8 @@ async function renderStats(){
   if(!rows||rows.length===0){$('mainContent').innerHTML='<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato ancora.<br><br>Inserisci il primo riepilogo! 👇</div>';return;}
 
   const totInc=rows.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0);
-  const totPizze=rows.reduce((s,r)=>s+(parseInt(r.pizze)||0),0);
-  const totCons=rows.reduce((s,r)=>s+(parseInt(r.consegne)||0),0);
+  const totPizze=rows.reduce((s,r)=>s+(parseInt(r.pizze_pizzeria)||0)+(parseInt(r.pizze_just_eat)||0),0);
+  const totCons=rows.reduce((s,r)=>s+(parseInt(r.consegne_pizzeria)||0)+(parseInt(r.consegne_just_eat)||0),0);
   const media=rows.length>0?totInc/rows.length:0;
 
   let html=`<div class="stat-grid">
@@ -351,7 +351,7 @@ async function renderStats(){
       </div>
       <div style="text-align:right">
         <div style="font-weight:900;color:#f1f5f9">€${fmt(parseFloat(r.incasso)||0)}</div>
-        <div style="font-size:11px;color:#64748b">${r.pizze||0} pizze · ${r.consegne||0} cons.</div>
+        <div style="font-size:11px;color:#64748b">${(parseInt(r.pizze_pizzeria)||0)+(parseInt(r.pizze_just_eat)||0)} pizze · ${(parseInt(r.consegne_pizzeria)||0)+(parseInt(r.consegne_just_eat)||0)} cons.</div>
       </div>
     </div>`;
   });
