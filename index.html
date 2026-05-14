@@ -1189,7 +1189,7 @@ function renderOrdini(){
     const border=sel?'#6366f1':'#e2e8f0';
     const bg=sel?'#f0f0ff':'#f8fafc';
     const col=sel?'#6366f1':'#475569';
-    html += '<button onclick="selectFornitore('+JSON.stringify(f.id)+')" ';
+    html += '<button onclick="selectFornitore(\'' + f.id + '\')" ';
     html += 'style="padding:14px 8px;border-radius:12px;border:2px solid '+border+';background:'+bg+';cursor:pointer;text-align:center">';
     html += '<div style="font-size:24px">'+f.emoji+'</div>';
     html += '<div style="font-size:12px;font-weight:700;color:'+col+';margin-top:4px">'+f.nome+'</div>';
@@ -1207,8 +1207,8 @@ function renderOrdini(){
       for(let i=0;i<f.prodotti.length;i++){
         const p=f.prodotti[i];
         const q=ordineAttivo[f.id][p.id]||0;
-        const fid=JSON.stringify(f.id);
-        const pid=JSON.stringify(p.id);
+        const fid="'" + f.id + "'";
+        const pid="'" + p.id + "'";
         html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9">';
         html += '<div><div style="font-size:13px;font-weight:700;color:#0f172a">'+p.nome+'</div>';
         html += '<div style="font-size:11px;color:#94a3b8">'+p.um+'</div></div>';
