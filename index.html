@@ -841,6 +841,10 @@ let storicoPage = 0;
 const STORICO_PER_PAGE = 10;
 let storicoAll = [];
 
+let storicoView = 'lista'; // 'lista' o 'calendario'
+let storicoCalMonth = new Date().getMonth();
+let storicoCalYear = new Date().getFullYear();
+
 async function renderStorico(reload=true){
   const isAdmin = currentSede.admin;
   if(reload){
@@ -861,11 +865,22 @@ async function renderStorico(reload=true){
     return;
   }
 
+  // Toggle lista/calendario
+  const toggleHtml = `<div style="display:flex;gap:8px;margin-bottom:12px">
+    <button onclick="storicoView='lista';renderStorico(false)" style="flex:1;padding:9px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${storicoView==='lista'?'#6366f1':'#f1f5f9'};color:${storicoView==='lista'?'#fff':'#64748b'}">📋 Lista</button>
+    <button onclick="storicoView='calendario';renderStorico(false)" style="flex:1;padding:9px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${storicoView==='calendario'?'#6366f1':'#f1f5f9'};color:${storicoView==='calendario'?'#fff':'#64748b'}">📅 Calendario</button>
+  </div>`;
+
+  if(storicoView==='calendario'){
+    $('mainContent').innerHTML = toggleHtml + renderCalendario(storicoAll);
+    return;
+  }
+
   const start = storicoPage * STORICO_PER_PAGE;
   const page = storicoAll.slice(start, start + STORICO_PER_PAGE);
   const totPages = Math.ceil(storicoAll.length / STORICO_PER_PAGE);
 
-  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+  let html = toggleHtml + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
     <div style="font-size:13px;color:#64748b;font-weight:600">${storicoAll.length} giornate totali</div>
     <div style="font-size:13px;color:#64748b">Pag. ${storicoPage+1}/${totPages}</div>
   </div>`;
@@ -947,6 +962,99 @@ async function renderStorico(reload=true){
   </div>`;
 
   $('mainContent').innerHTML = html;
+}
+
+function renderCalendario(rows){
+  const oggi = new Date();
+  const mesi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const giorniSettimana = ['Lu','Ma','Me','Gi','Ve','Sa','Do'];
+
+  // Set date inserite
+  const dateInserite = new Set(rows.map(r=>r.date));
+
+  let html = '';
+
+  // Naviga tra mesi
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <button onclick="storicoCalMonth--;if(storicoCalMonth<0){storicoCalMonth=11;storicoCalYear--;}renderStorico(false)" 
+      style="padding:8px 16px;border-radius:10px;border:none;background:#f1f5f9;color:#64748b;font-weight:800;cursor:pointer;font-size:16px">‹</button>
+    <div style="font-size:16px;font-weight:900;color:#0f172a">${mesi[storicoCalMonth]} ${storicoCalYear}</div>
+    <button onclick="storicoCalMonth++;if(storicoCalMonth>11){storicoCalMonth=0;storicoCalYear++;}renderStorico(false)"
+      style="padding:8px 16px;border-radius:10px;border:none;background:#f1f5f9;color:#64748b;font-weight:800;cursor:pointer;font-size:16px">›</button>
+  </div>`;
+
+  // Legenda
+  html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:700;color:#10b981">🟢 Inserito</span>
+    <span style="font-size:11px;font-weight:700;color:#ef4444">🔴 Mancante</span>
+    <span style="font-size:11px;font-weight:700;color:#94a3b8">⚪ Futuro</span>
+  </div>`;
+
+  // Griglia giorni settimana
+  html += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">
+    ${giorniSettimana.map(g=>`<div style="text-align:center;font-size:11px;font-weight:700;color:#94a3b8;padding:4px">${g}</div>`).join('')}
+  </div>`;
+
+  // Giorni del mese
+  const primoGiorno = new Date(storicoCalYear, storicoCalMonth, 1);
+  const ultimoGiorno = new Date(storicoCalYear, storicoCalMonth+1, 0);
+  const startDay = (primoGiorno.getDay()+6)%7; // Lunedì = 0
+  const totDays = ultimoGiorno.getDate();
+
+  html += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">`;
+
+  // Celle vuote prima del mese
+  for(let i=0;i<startDay;i++){
+    html += `<div></div>`;
+  }
+
+  for(let d=1;d<=totDays;d++){
+    const dateStr = `${storicoCalYear}-${String(storicoCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dataGiorno = new Date(storicoCalYear, storicoCalMonth, d);
+    const isFuturo = dataGiorno > oggi;
+    const isOggi = dataGiorno.toDateString()===oggi.toDateString();
+    const isInserito = dateInserite.has(dateStr);
+    const isMancante = !isFuturo && !isInserito;
+
+    let bg, color, border;
+    if(isFuturo)      { bg='#f8fafc'; color='#cbd5e1'; border='#e2e8f0'; }
+    else if(isInserito){ bg='#dcfce7'; color='#166534'; border='#86efac'; }
+    else               { bg='#fee2e2'; color='#991b1b'; border='#fca5a5'; }
+    if(isOggi)         { border='#6366f1'; }
+
+    const row = rows.find(r=>r.date===dateStr);
+    const incasso = row ? (parseFloat(row.incasso)||0)+(parseFloat(row.incasso_just_eat)||0) : 0;
+
+    html += `<div onclick="${isInserito?`loadForEdit('${row?.pizzeria}','${dateStr}')`:isMancante?`loadNewForm('${dateStr}')`:''}" 
+      style="border-radius:8px;border:2px solid ${border};background:${bg};padding:6px 4px;text-align:center;cursor:${isFuturo?'default':'pointer'};min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="font-size:13px;font-weight:${isOggi?'900':'700'};color:${color}">${d}</div>
+      ${isInserito?`<div style="font-size:9px;font-weight:700;color:#166534;margin-top:2px">€${fmt(incasso)}</div>`:''}
+      ${isMancante?`<div style="font-size:9px;color:#ef4444;margin-top:2px">!</div>`:''}
+    </div>`;
+  }
+  html += '</div>';
+
+  // Riepilogo mese
+  const dateDelMese = [...dateInserite].filter(d=>d.startsWith(`${storicoCalYear}-${String(storicoCalMonth+1).padStart(2,'0')}`));
+  const giorniPassati = Array.from({length:Math.min(oggi.getDate(), oggi.getMonth()===storicoCalMonth&&oggi.getFullYear()===storicoCalYear?oggi.getDate():totDays)}, (_,i)=>i+1).length;
+  const mancanti = giorniPassati - dateDelMese.length;
+  const incMese = rows.filter(r=>r.date.startsWith(`${storicoCalYear}-${String(storicoCalMonth+1).padStart(2,'0')}`))
+    .reduce((s,r)=>s+(parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0),0);
+
+  html += `<div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="text-align:center"><div style="font-size:18px;font-weight:900;color:#10b981">${dateDelMese.length}</div><div style="font-size:10px;color:#64748b;font-weight:700">INSERITI</div></div>
+      <div style="text-align:center"><div style="font-size:18px;font-weight:900;color:#ef4444">${Math.max(0,mancanti)}</div><div style="font-size:10px;color:#64748b;font-weight:700">MANCANTI</div></div>
+      <div style="text-align:center"><div style="font-size:18px;font-weight:900;color:#6366f1">€${fmt(incMese)}</div><div style="font-size:10px;color:#64748b;font-weight:700">INCASSO MESE</div></div>
+    </div>
+  </div>`;
+
+  return html;
+}
+
+function loadNewForm(date){
+  showTab('form');
+  setTimeout(()=>{ if($('f_date')) $('f_date').value=date; toast('📅 Data preimpostata!','#6366f1'); },300);
 }
 
 function toggleStoricoDetail(id){
