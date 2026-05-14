@@ -2,106 +2,143 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Don Basilico - Riepilogo</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;min-height:100vh;color:#1e293b}
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f3460 100%)}
-.login-box{background:#fff;border-radius:20px;padding:40px 32px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,.4)}
-.login-logo{text-align:center;margin-bottom:32px}
-.login-logo .emoji{font-size:44px}
-.login-logo h1{font-size:24px;font-weight:900;color:#0f172a;margin-top:8px}
+
+/* LOGIN */
+.login-bg{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#0f3460 100%)}
+.login-box{background:#fff;border-radius:24px;padding:36px 28px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .emoji{font-size:52px}
+.login-logo h1{font-size:26px;font-weight:900;color:#0f172a;margin-top:8px}
 .login-logo p{font-size:13px;color:#94a3b8;margin-top:4px}
-label{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;letter-spacing:.5px}
-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:15px;color:#1e293b;outline:none;transition:border .2s}
-input:focus{border-color:#6366f1}
-.field{margin-bottom:16px}
-.field:last-of-type{margin-bottom:24px}
-.btn{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,#6366f1,#0f172a);color:#fff;font-size:16px;font-weight:800;cursor:pointer;transition:opacity .2s}
-.btn:disabled{opacity:.6;cursor:not-allowed}
-.err{background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px}
+
+/* SEDE LIST */
+.sede-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.sede-btn{padding:14px 8px;border-radius:14px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:center;transition:all .15s;font-size:12px;font-weight:700;color:#475569;line-height:1.3}
+.sede-btn:active,.sede-btn.selected{border-color:var(--c);background:var(--cb);color:var(--c)}
+.sede-btn .sede-icon{font-size:22px;display:block;margin-bottom:4px}
+
+/* PIN */
+.pin-section{margin-top:20px}
+.pin-label{font-size:12px;font-weight:700;color:#64748b;margin-bottom:10px;text-align:center;letter-spacing:.5px}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid #cbd5e1;background:#f1f5f9;transition:all .15s}
+.pin-dot.filled{background:#6366f1;border-color:#6366f1}
+.pin-dot.error{background:#ef4444;border-color:#ef4444}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.num-btn{padding:18px 8px;border-radius:14px;border:none;background:#f1f5f9;font-size:22px;font-weight:700;color:#0f172a;cursor:pointer;transition:all .15s;-webkit-user-select:none}
+.num-btn:active{background:#e2e8f0;transform:scale(.96)}
+.num-btn.del{font-size:18px;color:#94a3b8}
+.num-btn.empty{background:transparent;pointer-events:none}
+.back-btn{width:100%;margin-top:14px;padding:12px;border-radius:10px;border:none;background:#f1f5f9;color:#64748b;font-size:14px;font-weight:700;cursor:pointer}
+.err-msg{background:#fee2e2;color:#991b1b;padding:10px;border-radius:10px;font-size:13px;text-align:center;margin-bottom:12px}
+
 /* APP */
 #app{display:none;flex-direction:column;min-height:100vh;background:#0f172a}
-.topbar{background:#1e293b;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #334155;position:sticky;top:0;z-index:100}
-.topbar-left{display:flex;align-items:center;gap:10px}
-.topbar-logo{font-size:22px}
+.topbar{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;background:#0f172a;position:sticky;top:0;z-index:100}
+.topbar-info{display:flex;align-items:center;gap:10px}
+.topbar-emoji{font-size:24px}
 .topbar-title{font-size:15px;font-weight:800;color:#f1f5f9}
-.topbar-sub{font-size:11px;color:#94a3b8}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.user-name{font-size:12px;font-weight:700;color:#e2e8f0;text-align:right}
-.user-role{font-size:10px;font-weight:600}
-.logout-btn{padding:6px 12px;border-radius:8px;border:1px solid #334155;background:transparent;color:#94a3b8;font-size:12px;cursor:pointer;font-weight:600}
+.topbar-sede{font-size:11px;font-weight:700;margin-top:1px}
+.logout-btn{padding:7px 14px;border-radius:10px;border:1px solid #334155;background:transparent;color:#94a3b8;font-size:12px;cursor:pointer;font-weight:700}
 .tabs{display:flex;background:#1e293b;border-bottom:1px solid #334155}
-.tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
-.tab.active{color:#6366f1;border-bottom-color:#6366f1}
-.content{padding:20px 16px 80px;flex:1}
-/* FORM */
-.card{background:#1e293b;border-radius:16px;padding:20px;margin-bottom:16px;border:1px solid #334155}
-.card-title{font-size:14px;font-weight:700;color:#94a3b8;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
-.field-label{font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px}
-.field-input{width:100%;padding:9px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#f1f5f9;font-size:14px;outline:none}
-.field-input:focus{border-color:#6366f1}
-.save-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px}
-.save-btn:disabled{opacity:.5}
+.tab{flex:1;padding:13px 6px;text-align:center;font-size:12px;font-weight:700;color:#64748b;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{color:#6366f1;border-bottom-color:#6366f1;background:#0f172a22}
+.content{padding:16px 14px 80px;flex:1}
+
+/* CARDS */
+.card{background:#1e293b;border-radius:16px;padding:18px;margin-bottom:14px;border:1px solid #334155}
+.card-title{font-size:11px;font-weight:800;color:#64748b;margin-bottom:14px;text-transform:uppercase;letter-spacing:.8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.fl{font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;letter-spacing:.3px}
+.fi{width:100%;padding:10px 10px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#f1f5f9;font-size:15px;outline:none;transition:border .2s;-webkit-appearance:none}
+.fi:focus{border-color:#6366f1}
+textarea.fi{resize:vertical}
+.save-btn{width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:16px;font-weight:900;cursor:pointer;margin-top:4px;letter-spacing:.3px}
+.save-btn:active{opacity:.85}
+
 /* STATS */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.stat-card{background:#1e293b;border-radius:12px;padding:16px;border:1px solid #334155}
-.stat-val{font-size:22px;font-weight:900;color:#f1f5f9}
-.stat-lbl{font-size:11px;color:#64748b;margin-top:4px}
-.stat-sub{font-size:12px;color:#94a3b8;margin-top:2px}
-.pdv-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:4px}
-select.field-input{-webkit-appearance:none}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:12px 24px;border-radius:12px;font-weight:700;font-size:14px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.3);transition:opacity .3s}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155}
+.stat-val{font-size:20px;font-weight:900;color:#f1f5f9}
+.stat-lbl{font-size:10px;color:#64748b;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.stat-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.row-item{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #1e293b}
+.row-item:last-child{border-bottom:none}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:13px 24px;border-radius:14px;font-weight:800;font-size:14px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4);white-space:nowrap;transition:opacity .3s}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div class="login-wrap" id="loginWrap">
+<div class="login-bg" id="loginBg">
   <div class="login-box">
     <div class="login-logo">
       <div class="emoji">🍕</div>
       <h1>Don Basilico</h1>
       <p>Riepilogo Giornaliero</p>
     </div>
-    <div class="field">
-      <label>EMAIL</label>
-      <input type="email" id="loginEmail" placeholder="gestore@donbasilico.it">
+
+    <!-- STEP 1: scelta sede -->
+    <div id="stepSede">
+      <div style="font-size:12px;font-weight:700;color:#64748b;text-align:center;margin-bottom:12px;letter-spacing:.5px">SELEZIONA LA TUA SEDE</div>
+      <div class="sede-list" id="sedeList"></div>
     </div>
-    <div class="field">
-      <label>PASSWORD</label>
-      <input type="password" id="loginPass" placeholder="••••••••">
+
+    <!-- STEP 2: PIN -->
+    <div id="stepPin" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div id="sedeSelName" style="font-size:15px;font-weight:800;color:#0f172a"></div>
+        <div id="sedeSelSub" style="font-size:12px;color:#94a3b8;margin-top:2px">Inserisci il PIN</div>
+      </div>
+      <div id="pinErr" class="err-msg" style="display:none"></div>
+      <div class="pin-dots" id="pinDots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="numpad">
+        <button class="num-btn" onclick="addPin('1')">1</button>
+        <button class="num-btn" onclick="addPin('2')">2</button>
+        <button class="num-btn" onclick="addPin('3')">3</button>
+        <button class="num-btn" onclick="addPin('4')">4</button>
+        <button class="num-btn" onclick="addPin('5')">5</button>
+        <button class="num-btn" onclick="addPin('6')">6</button>
+        <button class="num-btn" onclick="addPin('7')">7</button>
+        <button class="num-btn" onclick="addPin('8')">8</button>
+        <button class="num-btn" onclick="addPin('9')">9</button>
+        <button class="num-btn empty"></button>
+        <button class="num-btn" onclick="addPin('0')">0</button>
+        <button class="num-btn del" onclick="delPin()">⌫</button>
+      </div>
+      <button class="back-btn" onclick="backToSede()">← Cambia sede</button>
     </div>
-    <div id="loginErr" class="err" style="display:none"></div>
-    <button class="btn" id="loginBtn" onclick="doLogin()">Accedi</button>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-logo">🍕</div>
+    <div class="topbar-info">
+      <div class="topbar-emoji">🍕</div>
       <div>
         <div class="topbar-title">Don Basilico</div>
-        <div class="topbar-sub">Riepilogo Giornaliero</div>
+        <div class="topbar-sede" id="topSede"></div>
       </div>
     </div>
-    <div class="topbar-right">
-      <div>
-        <div class="user-name" id="userName"></div>
-        <div class="user-role" id="userRole"></div>
-      </div>
-      <button class="logout-btn" onclick="doLogout()">Esci</button>
-    </div>
+    <button class="logout-btn" onclick="doLogout()">Esci</button>
   </div>
   <div class="tabs" id="tabsBar">
-    <div class="tab active" onclick="showTab('stats')" id="tab-stats">📊 Statistiche</div>
-    <div class="tab" onclick="showTab('form')" id="tab-form">📝 Inserimento</div>
+    <div class="tab active" onclick="showTab('stats')" id="tab-stats">📊 Stats</div>
+    <div class="tab" onclick="showTab('form')" id="tab-form">📝 Inserisci</div>
   </div>
   <div class="content" id="mainContent"></div>
 </div>
@@ -111,305 +148,296 @@ const SUPA_URL = 'https://wgvuhjfszfzmzlhvizph.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnVoamZzemZ6bXpsaHZpenBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTk4NjAsImV4cCI6MjA5NDA5NTg2MH0.7E9gQEbz8qEAsXX5wzTBKnTAOPRDvE601REGlqnsCNo';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-const PIZZERIE = [
-  'Don Basilico - Pescara Centro',
-  'Don Basilico - Centro Marconi',
-  'Don Basilico - Montesilvano',
-  'Don Basilico - Chieti',
-  'Don Basilico - Università',
-  'Don Basilico - Pescara Nord'
+// ─── SEDI + PIN ───────────────────────────────────────────────────────────────
+// PIN: cambia questi come vuoi!
+const SEDI = [
+  { id:'pescara_centro',  name:'Pescara Centro',  emoji:'🏙️', color:'#6366f1', pin:'1111', admin:false },
+  { id:'centro_marconi',  name:'Centro Marconi',  emoji:'🛒', color:'#10b981', pin:'2222', admin:false },
+  { id:'montesilvano',    name:'Montesilvano',    emoji:'🌊', color:'#f59e0b', pin:'3333', admin:false },
+  { id:'chieti',          name:'Chieti',          emoji:'⛪', color:'#ef4444', pin:'4444', admin:false },
+  { id:'universita',      name:'Università',      emoji:'🎓', color:'#8b5cf6', pin:'5555', admin:false },
+  { id:'pescara_nord',    name:'Pescara Nord',    emoji:'🧭', color:'#06b6d4', pin:'6666', admin:false },
+  { id:'admin',           name:'Admin',           emoji:'👑', color:'#f59e0b', pin:'0000', admin:true  },
 ];
-const PDV_COLORS = {
-  'Don Basilico - Pescara Centro':'#6366f1',
-  'Don Basilico - Centro Marconi':'#10b981',
-  'Don Basilico - Montesilvano':'#f59e0b',
-  'Don Basilico - Chieti':'#ef4444',
-  'Don Basilico - Università':'#8b5cf6',
-  'Don Basilico - Pescara Nord':'#06b6d4'
+
+const DB_NAME = { // mappa id → nome nel DB
+  pescara_centro:'Don Basilico - Pescara Centro',
+  centro_marconi:'Don Basilico - Centro Marconi',
+  montesilvano:'Don Basilico - Montesilvano',
+  chieti:'Don Basilico - Chieti',
+  universita:'Don Basilico - Università',
+  pescara_nord:'Don Basilico - Pescara Nord',
 };
 
-let currentUser = null, currentProfile = null, currentTab = 'stats';
+let currentSede = null, pinBuffer = '', currentTab = 'stats';
 
 function $(id){ return document.getElementById(id); }
+function fmt(n){ return Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}); }
 
-function toast(msg, color='#10b981'){
-  const t = document.createElement('div');
-  t.className='toast'; t.textContent=msg; t.style.background=color;
-  document.body.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.remove(),300)}, 2500);
+// Render sedi
+function renderSedi(){
+  $('sedeList').innerHTML = SEDI.map(s=>`
+    <button class="sede-btn" style="--c:${s.color};--cb:${s.color}18" onclick="selectSede('${s.id}')">
+      <span class="sede-icon">${s.emoji}</span>${s.name}
+    </button>`).join('');
 }
 
-async function doLogin(){
-  const email = $('loginEmail').value.trim();
-  const pass = $('loginPass').value;
-  if(!email||!pass){ showErr('Inserisci email e password'); return; }
-  $('loginBtn').disabled=true; $('loginBtn').textContent='Accesso in corso...';
-  hideErr();
-  const {data,error} = await sb.auth.signInWithPassword({email, password:pass});
-  if(error){ showErr(error.message); $('loginBtn').disabled=false; $('loginBtn').textContent='Accedi'; return; }
-  const {data:profile} = await sb.schema('riepiloghi').from('profiles').select('*').eq('id',data.user.id).single();
-  currentUser=data.user; currentProfile=profile;
-  enterApp();
+function selectSede(id){
+  currentSede = SEDI.find(s=>s.id===id);
+  pinBuffer = '';
+  updateDots();
+  $('sedeSelName').textContent = currentSede.emoji+' '+currentSede.name;
+  $('stepSede').style.display='none';
+  $('stepPin').style.display='block';
+  $('pinErr').style.display='none';
 }
 
-function showErr(msg){ $('loginErr').textContent=msg; $('loginErr').style.display='block'; }
-function hideErr(){ $('loginErr').style.display='none'; }
+function backToSede(){
+  $('stepPin').style.display='none';
+  $('stepSede').style.display='block';
+  pinBuffer=''; updateDots();
+}
 
-$('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
-$('loginEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') $('loginPass').focus(); });
+function addPin(n){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=n;
+  updateDots();
+  if(pinBuffer.length===4) checkPin();
+}
+
+function delPin(){
+  pinBuffer=pinBuffer.slice(0,-1);
+  updateDots();
+}
+
+function updateDots(){
+  for(let i=0;i<4;i++){
+    const d=$('d'+i);
+    d.classList.remove('filled','error');
+    if(i<pinBuffer.length) d.classList.add('filled');
+  }
+}
+
+function checkPin(){
+  if(pinBuffer===currentSede.pin){
+    $('pinErr').style.display='none';
+    enterApp();
+  } else {
+    for(let i=0;i<4;i++) { const d=$('d'+i); d.classList.remove('filled'); d.classList.add('error'); }
+    $('pinErr').textContent='PIN errato. Riprova.';
+    $('pinErr').style.display='block';
+    setTimeout(()=>{ pinBuffer=''; updateDots(); $('pinErr').style.display='none'; },1000);
+  }
+}
 
 function enterApp(){
-  $('loginWrap').style.display='none';
+  $('loginBg').style.display='none';
   $('app').style.display='flex';
-  $('userName').textContent = currentProfile?.full_name || currentUser.email;
-  const isAdmin = currentProfile?.role === 'admin';
-  const pdvColor = PDV_COLORS[currentProfile?.pizzeria] || '#6366f1';
-  $('userRole').textContent = isAdmin ? '👑 Admin' : '🧑‍🍳 Gestore';
-  $('userRole').style.color = isAdmin ? '#f59e0b' : pdvColor;
-  if(isAdmin){
-    $('tabsBar').innerHTML += '<div class="tab" onclick="showTab(\'users\')" id="tab-users">👥 Utenti</div>';
+  $('topSede').textContent = currentSede.emoji+' '+currentSede.name;
+  $('topSede').style.color = currentSede.color;
+  if(currentSede.admin){
+    if(!$('tab-admin')){
+      $('tabsBar').innerHTML += '<div class="tab" onclick="showTab(\'admin\')" id="tab-admin">⚙️ Admin</div>';
+    }
   }
   showTab('stats');
 }
 
-async function doLogout(){
-  await sb.auth.signOut();
-  currentUser=null; currentProfile=null;
+function doLogout(){
+  currentSede=null; pinBuffer='';
   $('app').style.display='none';
-  $('loginWrap').style.display='flex';
-  $('loginBtn').disabled=false; $('loginBtn').textContent='Accedi';
-  $('loginEmail').value=''; $('loginPass').value='';
+  $('loginBg').style.display='flex';
+  $('stepPin').style.display='none';
+  $('stepSede').style.display='block';
+  updateDots();
 }
 
 function showTab(t){
   currentTab=t;
-  ['stats','form','users'].forEach(x=>{
+  ['stats','form','admin'].forEach(x=>{
     const el=$('tab-'+x); if(el) el.classList.remove('active');
   });
-  const active=$('tab-'+t); if(active) active.classList.add('active');
+  const el=$('tab-'+t); if(el) el.classList.add('active');
   if(t==='stats') renderStats();
   else if(t==='form') renderForm();
-  else if(t==='users') renderUsers();
+  else if(t==='admin') renderAdmin();
+}
+
+function toast(msg,color='#10b981'){
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg; t.style.background=color;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2500);
 }
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 async function renderStats(){
-  const isAdmin = currentProfile?.role==='admin';
-  const pizzerie = isAdmin ? PIZZERIE : [currentProfile?.pizzeria];
-  $('mainContent').innerHTML = '<div style="color:#94a3b8;padding:20px;text-align:center">Caricamento...</div>';
-  
-  let q = sb.schema('riepiloghi').from('daily').select('*').order('date',{ascending:false}).limit(200);
-  if(!isAdmin) q = q.eq('pizzeria', currentProfile?.pizzeria);
-  const {data:rows,error} = await q;
-  
-  if(error){ $('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444">${error.message}</p></div>`; return; }
-  if(!rows||rows.length===0){ $('mainContent').innerHTML='<div class="card" style="text-align:center;color:#94a3b8;padding:40px">Nessun dato ancora.<br>Inserisci il primo riepilogo!</div>'; return; }
+  $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center;font-size:14px">⏳ Caricamento...</div>';
+  const isAdmin = currentSede.admin;
+  let q = sb.schema('riepiloghi').from('daily').select('*').order('date',{ascending:false}).limit(300);
+  if(!isAdmin) q=q.eq('pizzeria', DB_NAME[currentSede.id]);
+  const {data:rows,error}=await q;
+  if(error){$('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444;font-size:13px">${error.message}</p></div>`;return;}
+  if(!rows||rows.length===0){$('mainContent').innerHTML='<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato ancora.<br><br>Inserisci il primo riepilogo! 👇</div>';return;}
 
-  const tot_incasso = rows.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0);
-  const tot_pizze = rows.reduce((s,r)=>s+(parseInt(r.pizze)||0),0);
-  const tot_consegne = rows.reduce((s,r)=>s+(parseInt(r.consegne)||0),0);
-  const giorni = rows.length;
-  const media_giorno = giorni>0 ? tot_incasso/giorni : 0;
+  const totInc=rows.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0);
+  const totPizze=rows.reduce((s,r)=>s+(parseInt(r.pizze)||0),0);
+  const totCons=rows.reduce((s,r)=>s+(parseInt(r.consegne)||0),0);
+  const media=rows.length>0?totInc/rows.length:0;
 
-  let html = `<div class="stat-grid">
-    <div class="stat-card"><div class="stat-val">€ ${fmt(tot_incasso)}</div><div class="stat-lbl">Incasso Totale</div><div class="stat-sub">${giorni} giorni</div></div>
-    <div class="stat-card"><div class="stat-val">€ ${fmt(media_giorno)}</div><div class="stat-lbl">Media/Giorno</div></div>
-    <div class="stat-card"><div class="stat-val">${fmtN(tot_pizze)}</div><div class="stat-lbl">Pizze Totali</div></div>
-    <div class="stat-card"><div class="stat-val">${fmtN(tot_consegne)}</div><div class="stat-lbl">Consegne</div></div>
+  let html=`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-val">€${fmt(totInc)}</div><div class="stat-lbl">Incasso Totale</div><div class="stat-sub">${rows.length} giorni</div></div>
+    <div class="stat-card"><div class="stat-val">€${fmt(media)}</div><div class="stat-lbl">Media/Giorno</div></div>
+    <div class="stat-card"><div class="stat-val">${fmt(totPizze)}</div><div class="stat-lbl">Pizze Totali</div></div>
+    <div class="stat-card"><div class="stat-val">${fmt(totCons)}</div><div class="stat-lbl">Consegne</div></div>
   </div>`;
 
   if(isAdmin){
-    html += '<div class="card"><div class="card-title">Per Pizzeria</div>';
-    PIZZERIE.forEach(pdv=>{
-      const r2 = rows.filter(r=>r.pizzeria===pdv);
-      if(r2.length===0) return;
-      const inc = r2.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0);
-      const color = PDV_COLORS[pdv]||'#6366f1';
-      const shortName = pdv.replace('Don Basilico - ','');
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #334155">
-        <div><span class="pdv-tag" style="background:${color}22;color:${color}">${shortName}</span><span style="font-size:11px;color:#64748b">${r2.length}gg</span></div>
-        <div style="font-weight:800;color:#f1f5f9">€ ${fmt(inc)}</div>
+    html+='<div class="card"><div class="card-title">Per Sede</div>';
+    SEDI.filter(s=>!s.admin).forEach(s=>{
+      const r2=rows.filter(r=>r.pizzeria===DB_NAME[s.id]);
+      if(!r2.length) return;
+      const inc=r2.reduce((a,r)=>a+(parseFloat(r.incasso)||0),0);
+      html+=`<div class="row-item">
+        <div><span class="badge" style="background:${s.color}22;color:${s.color}">${s.emoji} ${s.name}</span><span style="font-size:11px;color:#64748b;margin-left:6px">${r2.length}gg</span></div>
+        <div style="font-weight:900;color:#f1f5f9;font-size:15px">€${fmt(inc)}</div>
       </div>`;
     });
-    html += '</div>';
+    html+='</div>';
   }
 
-  // Ultimi 7 giorni
-  html += '<div class="card"><div class="card-title">Ultimi Inserimenti</div>';
+  html+='<div class="card"><div class="card-title">Ultimi 10 Inserimenti</div>';
   rows.slice(0,10).forEach(r=>{
-    const color = PDV_COLORS[r.pizzeria]||'#6366f1';
-    const shortName = (r.pizzeria||'').replace('Don Basilico - ','');
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #334155">
+    const sede=SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)||{color:'#6366f1',emoji:'🍕',name:r.pizzeria};
+    html+=`<div class="row-item">
       <div>
-        <div style="font-size:13px;font-weight:700;color:#f1f5f9">${r.date}</div>
-        <span class="pdv-tag" style="background:${color}22;color:${color};font-size:10px">${shortName}</span>
+        <div style="font-size:13px;font-weight:800;color:#f1f5f9">${r.date}</div>
+        ${isAdmin?`<span class="badge" style="background:${sede.color}22;color:${sede.color};font-size:10px">${sede.emoji} ${sede.name}</span>`:''}
       </div>
       <div style="text-align:right">
-        <div style="font-weight:800;color:#f1f5f9">€ ${fmt(parseFloat(r.incasso)||0)}</div>
-        <div style="font-size:11px;color:#64748b">${r.pizze||0} pizze</div>
+        <div style="font-weight:900;color:#f1f5f9">€${fmt(parseFloat(r.incasso)||0)}</div>
+        <div style="font-size:11px;color:#64748b">${r.pizze||0} pizze · ${r.consegne||0} cons.</div>
       </div>
     </div>`;
   });
-  html += '</div>';
-
-  $('mainContent').innerHTML = html;
+  html+='</div>';
+  $('mainContent').innerHTML=html;
 }
-
-function fmt(n){ return Number(n).toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}); }
-function fmtN(n){ return Number(n).toLocaleString('it-IT'); }
 
 // ─── FORM ─────────────────────────────────────────────────────────────────────
 function renderForm(){
-  const isAdmin = currentProfile?.role==='admin';
-  const pizzerie = isAdmin ? PIZZERIE : [currentProfile?.pizzeria];
-  const today = new Date().toISOString().slice(0,10);
+  const today=new Date().toISOString().slice(0,10);
+  const isAdmin=currentSede.admin;
+  const sedeOpts=SEDI.filter(s=>!s.admin).map(s=>`<option value="${s.id}">${s.emoji} ${s.name}</option>`).join('');
 
-  let pdvOpts = pizzerie.map(p=>`<option value="${p}">${p.replace('Don Basilico - ','')}</option>`).join('');
-  
-  $('mainContent').innerHTML = `
+  $('mainContent').innerHTML=`
+  ${isAdmin?`<div class="card"><div class="card-title">Sede</div>
+    <div class="fl">PIZZERIA</div>
+    <select class="fi" id="f_sede">${sedeOpts}</select>
+  </div>`:''}
   <div class="card">
-    <div class="card-title">Nuovo Riepilogo</div>
-    <div class="row">
-      <div>
-        <div class="field-label">DATA</div>
-        <input class="field-input" type="date" id="f_date" value="${today}">
-      </div>
-      <div>
-        <div class="field-label">PIZZERIA</div>
-        <select class="field-input" id="f_pizzeria">${pdvOpts}</select>
-      </div>
-    </div>
+    <div class="card-title">Data</div>
+    <input class="fi" type="date" id="f_date" value="${today}">
   </div>
   <div class="card">
     <div class="card-title">Personale</div>
-    <div class="row">
-      <div><div class="field-label">FC</div><input class="field-input" type="number" id="f_fc" placeholder="0"></div>
-      <div><div class="field-label">RAGAZZI</div><input class="field-input" type="number" id="f_ragazzi" placeholder="0"></div>
+    <div class="row2">
+      <div><div class="fl">FC</div><input class="fi" type="number" id="f_fc" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">RAGAZZI</div><input class="fi" type="number" id="f_ragazzi" placeholder="0" inputmode="numeric"></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Ordini POS</div>
-    <div class="row-3">
-      <div><div class="field-label">DOMICILIO</div><input class="field-input" type="number" id="f_pos_domicilio" placeholder="0"></div>
-      <div><div class="field-label">JUST EAT</div><input class="field-input" type="number" id="f_pos_just_eat" placeholder="0"></div>
-      <div><div class="field-label">PIZZERIA</div><input class="field-input" type="number" id="f_pos_pizzeria" placeholder="0"></div>
+    <div class="row3">
+      <div><div class="fl">DOMICILIO</div><input class="fi" type="number" id="f_dom" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">JUST EAT</div><input class="fi" type="number" id="f_je" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">PIZZERIA</div><input class="fi" type="number" id="f_piz" placeholder="0" inputmode="numeric"></div>
     </div>
-    <div class="row">
-      <div><div class="field-label">ANNULLATI</div><input class="field-input" type="number" id="f_annullati" placeholder="0"></div>
-      <div><div class="field-label">CONSEGNE</div><input class="field-input" type="number" id="f_consegne" placeholder="0"></div>
+    <div class="row2">
+      <div><div class="fl">ANNULLATI</div><input class="fi" type="number" id="f_ann" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">CONSEGNE</div><input class="fi" type="number" id="f_cons" placeholder="0" inputmode="numeric"></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Produzione</div>
-    <div class="row">
-      <div><div class="field-label">PIZZE</div><input class="field-input" type="number" id="f_pizze" placeholder="0"></div>
-      <div><div class="field-label">FORMATO PIZZE</div><input class="field-input" type="text" id="f_formato_pizze" placeholder="es. 8/10/12"></div>
+    <div class="row2">
+      <div><div class="fl">PIZZE</div><input class="fi" type="number" id="f_pizze" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">FORMATO</div><input class="fi" type="text" id="f_formato" placeholder="8/10/12"></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Cassa</div>
-    <div class="row">
-      <div><div class="field-label">IMPORTI (€)</div><input class="field-input" type="number" id="f_importi" placeholder="0.00" step="0.01"></div>
-      <div><div class="field-label">INCASSO (€)</div><input class="field-input" type="number" id="f_incasso" placeholder="0.00" step="0.01"></div>
+    <div class="row2">
+      <div><div class="fl">IMPORTI €</div><input class="fi" type="number" id="f_imp" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">INCASSO €</div><input class="fi" type="number" id="f_inc" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
-    <div class="row">
-      <div><div class="field-label">CONTANTI (€)</div><input class="field-input" type="number" id="f_contanti" placeholder="0.00" step="0.01"></div>
-      <div><div class="field-label">SPESE (€)</div><input class="field-input" type="number" id="f_spese" placeholder="0.00" step="0.01"></div>
+    <div class="row2">
+      <div><div class="fl">CONTANTI €</div><input class="fi" type="number" id="f_cont" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">SPESE €</div><input class="fi" type="number" id="f_spese" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Note</div>
-    <textarea class="field-input" id="f_note" rows="3" placeholder="Note..."></textarea>
+    <textarea class="fi" id="f_note" rows="3" placeholder="Note del giorno..."></textarea>
   </div>
   <button class="save-btn" id="saveBtn" onclick="saveForm()">💾 Salva Riepilogo</button>`;
 }
 
 async function saveForm(){
-  const btn = $('saveBtn');
-  btn.disabled=true; btn.textContent='Salvataggio...';
-  const row = {
-    pizzeria: $('f_pizzeria').value,
+  const btn=$('saveBtn'); btn.disabled=true; btn.textContent='Salvataggio...';
+  const sedeId = currentSede.admin ? $('f_sede').value : currentSede.id;
+  const row={
+    pizzeria: DB_NAME[sedeId],
     date: $('f_date').value,
     fc: parseInt($('f_fc').value)||0,
     ragazzi: parseInt($('f_ragazzi').value)||0,
-    pos_domicilio: parseInt($('f_pos_domicilio').value)||0,
-    pos_just_eat: parseInt($('f_pos_just_eat').value)||0,
-    pos_pizzeria: parseInt($('f_pos_pizzeria').value)||0,
-    annullati: parseInt($('f_annullati').value)||0,
-    consegne: parseInt($('f_consegne').value)||0,
+    pos_domicilio: parseInt($('f_dom').value)||0,
+    pos_just_eat: parseInt($('f_je').value)||0,
+    pos_pizzeria: parseInt($('f_piz').value)||0,
+    annullati: parseInt($('f_ann').value)||0,
+    consegne: parseInt($('f_cons').value)||0,
     pizze: parseInt($('f_pizze').value)||0,
-    formato_pizze: $('f_formato_pizze').value,
-    importi: parseFloat($('f_importi').value)||0,
-    incasso: parseFloat($('f_incasso').value)||0,
-    contanti: parseFloat($('f_contanti').value)||0,
+    formato_pizze: $('f_formato').value,
+    importi: parseFloat($('f_imp').value)||0,
+    incasso: parseFloat($('f_inc').value)||0,
+    contanti: parseFloat($('f_cont').value)||0,
     spese: parseFloat($('f_spese').value)||0,
     note: $('f_note').value,
-    user_id: currentUser.id
   };
-  const {error} = await sb.schema('riepiloghi').from('daily').upsert(row, {onConflict:'pizzeria,date'});
-  if(error){ toast('Errore: '+error.message,'#ef4444'); btn.disabled=false; btn.textContent='💾 Salva Riepilogo'; return; }
-  toast('✓ Riepilogo salvato!');
+  const {error}=await sb.schema('riepiloghi').from('daily').upsert(row,{onConflict:'pizzeria,date'});
+  if(error){toast('Errore: '+error.message,'#ef4444');}
+  else{toast('✓ Salvato!'); showTab('stats');}
   btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
-  showTab('stats');
 }
 
-// ─── USERS ────────────────────────────────────────────────────────────────────
-async function renderUsers(){
-  $('mainContent').innerHTML='<div style="color:#94a3b8;padding:20px;text-align:center">Caricamento...</div>';
-  const {data:users} = await sb.schema('riepiloghi').from('profiles').select('*').order('created_at');
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
+async function renderAdmin(){
+  $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
+  const {data:rows}=await sb.schema('riepiloghi').from('daily').select('*').order('date',{ascending:false}).limit(500);
   
-  let pdvOpts = PIZZERIE.map(p=>`<option value="${p}">${p.replace('Don Basilico - ','')}</option>`).join('');
-  
-  let html = `<div class="card">
-    <div class="card-title">Crea Nuovo Utente</div>
-    <div class="field" style="margin-bottom:12px"><div class="field-label">EMAIL</div><input class="field-input" type="email" id="nu_email" placeholder="gestore@donbasilico.it"></div>
-    <div class="field" style="margin-bottom:12px"><div class="field-label">NOME</div><input class="field-input" type="text" id="nu_name" placeholder="Nome Gestore"></div>
-    <div class="field" style="margin-bottom:12px"><div class="field-label">PASSWORD</div><input class="field-input" type="password" id="nu_pass" placeholder="min 6 caratteri"></div>
-    <div class="field" style="margin-bottom:16px"><div class="field-label">PIZZERIA</div><select class="field-input" id="nu_pizzeria">${pdvOpts}</select></div>
-    <button class="save-btn" id="createBtn" onclick="createUser()" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">➕ Crea Utente</button>
-  </div>
-  <div class="card"><div class="card-title">Utenti (${users?.length||0})</div>`;
-  
-  (users||[]).forEach(u=>{
-    const color = u.role==='admin' ? '#f59e0b' : (PDV_COLORS[u.pizzeria]||'#6366f1');
-    const short = u.role==='admin' ? 'Admin' : (u.pizzeria||'').replace('Don Basilico - ','');
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #334155">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#f1f5f9">${u.full_name||u.email}</div>
-        <div style="font-size:11px;color:#64748b">${u.email}</div>
-      </div>
-      <span class="pdv-tag" style="background:${color}22;color:${color}">${short}</span>
+  const totale=rows?.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0)||0;
+  let html=`<div class="card"><div class="card-title">Riepilogo Generale</div>
+    <div class="row-item"><span style="color:#94a3b8;font-size:13px">Totale giorni inseriti</span><span style="color:#f1f5f9;font-weight:800">${rows?.length||0}</span></div>
+    <div class="row-item"><span style="color:#94a3b8;font-size:13px">Incasso totale storico</span><span style="color:#10b981;font-weight:900;font-size:15px">€${fmt(totale)}</span></div>
+  </div>`;
+
+  // PIN correnti
+  html+=`<div class="card"><div class="card-title">PIN Sedi</div>`;
+  SEDI.filter(s=>!s.admin).forEach(s=>{
+    html+=`<div class="row-item">
+      <span class="badge" style="background:${s.color}22;color:${s.color}">${s.emoji} ${s.name}</span>
+      <span style="font-family:monospace;font-size:16px;font-weight:900;color:#f1f5f9;background:#0f172a;padding:4px 12px;border-radius:8px">${s.pin}</span>
     </div>`;
   });
-  html += '</div>';
+  html+=`<div style="font-size:11px;color:#64748b;margin-top:12px;padding-top:8px;border-top:1px solid #334155">
+    I PIN si cambiano direttamente nel codice sorgente (index.html → array SEDI)
+  </div></div>`;
+
   $('mainContent').innerHTML=html;
 }
 
-async function createUser(){
-  const email=$('nu_email').value.trim(), name=$('nu_name').value.trim(), pass=$('nu_pass').value, pizzeria=$('nu_pizzeria').value;
-  if(!email||!pass||!name){ toast('Compila tutti i campi','#ef4444'); return; }
-  const btn=$('createBtn'); btn.disabled=true; btn.textContent='Creazione...';
-  
-  const resp = await fetch(`${SUPA_URL}/functions/v1/create-user`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body: JSON.stringify({email,password:pass,full_name:name,pizzeria,role:'gestore'})
-  });
-  const result = await resp.json();
-  if(result.error){ toast('Errore: '+result.error,'#ef4444'); }
-  else { toast('✓ Utente creato!'); renderUsers(); }
-  btn.disabled=false; btn.textContent='➕ Crea Utente';
-}
-
-// Check se già loggato
-sb.auth.getSession().then(({data:{session}})=>{
-  if(session){
-    sb.schema('riepiloghi').from('profiles').select('*').eq('id',session.user.id).single().then(({data:profile})=>{
-      currentUser=session.user; currentProfile=profile;
-      enterApp();
-    });
-  }
-});
+// INIT
+renderSedi();
 </script>
 </body>
 </html>
