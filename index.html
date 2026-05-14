@@ -148,45 +148,32 @@ const SUPA_URL = 'https://wgvuhjfszfzmzlhvizph.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnVoamZzemZ6bXpsaHZpenBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTk4NjAsImV4cCI6MjA5NDA5NTg2MH0.7E9gQEbz8qEAsXX5wzTBKnTAOPRDvE601REGlqnsCNo';
 // Direct REST API - no supabase client needed
 async function dbSelect(table, params={}) {
-  const qp = [];
+  const qp = ['select=*'];
   if(params.eq) Object.entries(params.eq).forEach(([k,v]) => qp.push(`${k}=eq.${encodeURIComponent(v)}`));
   if(params.order) qp.push(`order=${params.order}`);
   if(params.limit) qp.push(`limit=${params.limit}`);
-  qp.push('select=*');
   const url = `${SUPA_URL}/rest/v1/${table}?${qp.join('&')}`;
-  console.log('Fetching:', url);
   const r = await fetch(url, { headers: {
     'apikey': SUPA_KEY,
-    'Authorization': `Bearer ${SUPA_KEY}`,
-    'Accept-Profile': 'riepiloghi'
+    'Authorization': `Bearer ${SUPA_KEY}`
   }});
   const text = await r.text();
-  console.log('Response:', r.status, text.slice(0,200));
   if(!r.ok) throw new Error(text);
   return JSON.parse(text);
 }
 
 async function dbUpsert(table, row) {
-  // Prima prova DELETE del record esistente, poi INSERT
-  const delUrl = `${SUPA_URL}/rest/v1/${table}?pizzeria=eq.${encodeURIComponent(row.pizzeria)}&date=eq.${row.date}`;
-  await fetch(delUrl, {
-    method: 'DELETE',
-    headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Profile': 'riepiloghi' }
-  });
-  // Poi INSERT
-  const insUrl = `${SUPA_URL}/rest/v1/${table}`;
-  const r = await fetch(insUrl, {
+  const url = `${SUPA_URL}/rest/v1/${table}`;
+  const r = await fetch(url, {
     method: 'POST',
     headers: {
       'apikey': SUPA_KEY,
       'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Profile': 'riepiloghi',
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify(row)
   });
-  // 200, 201, 204 sono tutti OK per Supabase
   if(r.status >= 400) { const e=await r.text(); throw new Error(e); }
   return {};
 }
@@ -322,7 +309,7 @@ async function renderStats(){
   try {
     const params = {order:'date.desc', limit:300};
     if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
-    rows = await dbSelect('daily', params);
+    rows = await dbSelect('riepilogo_daily', params);
   } catch(e) { error_msg = e.message; }
   const error = error_msg ? {message: error_msg} : null;
   if(error){$('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444;font-size:13px">${error.message}</p></div>`;return;}
@@ -459,7 +446,7 @@ async function saveForm(){
     note: $('f_note').value,
   };
   try { 
-    await dbUpsert('daily', row);
+    await dbUpsert('riepilogo_daily', row);
     toast('✓ Salvato!'); 
     showTab('stats');
   } catch(e) { 
@@ -472,7 +459,7 @@ async function saveForm(){
 async function renderAdmin(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
   let rows=[];
-  try { rows = await dbSelect('daily', {order:'date.desc', limit:500}); } catch(e) {}
+  try { rows = await dbSelect('riepilogo_daily', {order:'date.desc', limit:500}); } catch(e) {}
   
   const totale=rows?.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0)||0;
   let html=`<div class="card"><div class="card-title">Riepilogo Generale</div>
