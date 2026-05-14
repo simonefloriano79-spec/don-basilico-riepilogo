@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Don Basilico - Riepilogo</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;min-height:100vh;color:#1e293b}
@@ -146,12 +146,40 @@ textarea.fi{resize:vertical}
 <script>
 const SUPA_URL = 'https://wgvuhjfszfzmzlhvizph.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndnVoamZzemZ6bXpsaHZpenBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTk4NjAsImV4cCI6MjA5NDA5NTg2MH0.7E9gQEbz8qEAsXX5wzTBKnTAOPRDvE601REGlqnsCNo';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  db: { schema: 'riepiloghi' },
-  global: {
-    headers: { 'Accept-Profile': 'riepiloghi', 'Content-Profile': 'riepiloghi' }
-  }
-});
+// Direct REST API - no supabase client needed
+async function dbSelect(table, params={}) {
+  let url = `${SUPA_URL}/rest/v1/${table}?`;
+  const qp = [];
+  if(params.eq) Object.entries(params.eq).forEach(([k,v]) => qp.push(`${k}=eq.${encodeURIComponent(v)}`));
+  if(params.order) qp.push(`order=${params.order}`);
+  if(params.limit) qp.push(`limit=${params.limit}`);
+  url += qp.join('&');
+  const r = await fetch(url, { headers: {
+    'apikey': SUPA_KEY,
+    'Authorization': `Bearer ${SUPA_KEY}`,
+    'Accept-Profile': 'riepiloghi',
+    'Content-Type': 'application/json'
+  }});
+  if(!r.ok) { const e=await r.text(); throw new Error(e); }
+  return r.json();
+}
+
+async function dbUpsert(table, row) {
+  const url = `${SUPA_URL}/rest/v1/${table}?on_conflict=pizzeria,date`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Profile': 'riepiloghi',
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(row)
+  });
+  if(!r.ok) { const e=await r.text(); throw new Error(e); }
+  return {};
+}
 
 // ─── SEDI + PIN ───────────────────────────────────────────────────────────────
 // PIN: cambia questi come vuoi!
@@ -280,8 +308,13 @@ async function renderStats(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center;font-size:14px">⏳ Caricamento...</div>';
   const isAdmin = currentSede.admin;
   let q = sb.from('daily').select('*').order('date',{ascending:false}).limit(300);
-  if(!isAdmin) q=q.eq('pizzeria', DB_NAME[currentSede.id]);
-  const {data:rows,error}=await q;
+  let rows, error_msg;
+  try {
+    const params = {order:'date.desc', limit:300};
+    if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
+    rows = await dbSelect('daily', params);
+  } catch(e) { error_msg = e.message; }
+  const error = error_msg ? {message: error_msg} : null;
   if(error){$('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444;font-size:13px">${error.message}</p></div>`;return;}
   if(!rows||rows.length===0){$('mainContent').innerHTML='<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato ancora.<br><br>Inserisci il primo riepilogo! 👇</div>';return;}
 
