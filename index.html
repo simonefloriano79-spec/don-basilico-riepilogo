@@ -142,6 +142,7 @@ textarea.fi{resize:vertical}
   </div>
   <div class="tabs" id="tabsBar">
     <div class="tab active" onclick="showTab('stats')" id="tab-stats">📊 Stats</div>
+    <div class="tab" onclick="showTab('storico')" id="tab-storico">📋 Storico</div>
     <div class="tab" onclick="showTab('form')" id="tab-form">📝 Inserisci</div>
   </div>
   <div class="content" id="mainContent"></div>
@@ -293,6 +294,7 @@ function showTab(t){
   });
   const el=$('tab-'+t); if(el) el.classList.add('active');
   if(t==='stats') renderStats();
+  else if(t==='storico') renderStorico();
   else if(t==='form') renderForm();
   else if(t==='admin') renderAdmin();
 }
@@ -832,6 +834,170 @@ async function saveForm(){
     toast('Errore: '+e.message,'#ef4444');
   }
   btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
+}
+
+// ─── STORICO ─────────────────────────────────────────────────────────────────
+let storicoPage = 0;
+const STORICO_PER_PAGE = 10;
+let storicoAll = [];
+
+async function renderStorico(reload=true){
+  const isAdmin = currentSede.admin;
+  if(reload){
+    $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
+    try {
+      const params = {order:'date.desc', limit:500};
+      if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
+      storicoAll = await dbSelect('riepilogo_daily', params);
+      storicoPage = 0;
+    } catch(e) {
+      $('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444">${e.message}</p></div>`;
+      return;
+    }
+  }
+
+  if(!storicoAll.length){
+    $('mainContent').innerHTML='<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato inserito ancora</div>';
+    return;
+  }
+
+  const start = storicoPage * STORICO_PER_PAGE;
+  const page = storicoAll.slice(start, start + STORICO_PER_PAGE);
+  const totPages = Math.ceil(storicoAll.length / STORICO_PER_PAGE);
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="font-size:13px;color:#64748b;font-weight:600">${storicoAll.length} giornate totali</div>
+    <div style="font-size:13px;color:#64748b">Pag. ${storicoPage+1}/${totPages}</div>
+  </div>`;
+
+  page.forEach((r,i)=>{
+    const sede = SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)||{color:'#6366f1',emoji:'🍕',name:r.pizzeria};
+    const incTot = (parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0);
+    const pizze = parseInt(r.pizze_piatto)||0;
+    const spese = parseFloat(r.spese)||0;
+    const vm = pizze>0 ? incTot/pizze : 0;
+    const bn = (parseFloat(r.chiusura_fiscale)||0)>0 ? Math.abs(((parseFloat(r.incasso)||0)-(parseFloat(r.chiusura_fiscale)||0))/(parseFloat(r.chiusura_fiscale)||1)*100) : null;
+    const globalIdx = start + i;
+
+    html += `<div class="card" style="margin-bottom:10px;cursor:pointer" onclick="toggleStoricoDetail('sd${globalIdx}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:15px;font-weight:900;color:#0f172a">${r.date}</div>
+          ${isAdmin?`<span class="badge" style="background:${sede.color}22;color:${sede.color};margin-top:4px">${sede.emoji} ${sede.name.replace('Don Basilico - ','')}</span>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:900;color:#0f172a">€${fmt(incTot)}</div>
+          <div style="font-size:11px;color:#64748b">${fmt(pizze)} pizze · €${vm.toFixed(2)}/pz</div>
+          ${bn!==null?`<div style="font-size:11px;font-weight:700;color:${bn<30?'#10b981':'#ef4444'}">B/N ${bn.toFixed(1)}%</div>`:''}
+        </div>
+      </div>
+      <!-- DETTAGLIO ESPANDIBILE -->
+      <div id="sd${globalIdx}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">INCASSO PIZ.</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">€${fmt(parseFloat(r.incasso)||0)}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">INCASSO JE</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">€${fmt(parseFloat(r.incasso_just_eat)||0)}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">PIZZE TOT.</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">${fmt(pizze)}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">CONSEGNE</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">${fmt((parseInt(r.consegne_pizzeria)||0)+(parseInt(r.consegne_just_eat)||0))}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">SPESE</div>
+            <div style="font-size:14px;font-weight:800;color:#ef4444">€${fmt(spese)}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">CHIUSURA FISC.</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">€${fmt(parseFloat(r.chiusura_fiscale)||0)}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">POS DOM.</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">${r.pos_domicilio||0}</div>
+          </div>
+          <div style="background:#f8fafc;padding:8px;border-radius:8px">
+            <div style="font-size:10px;color:#94a3b8;font-weight:700">POS JE</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">${r.pos_just_eat||0}</div>
+          </div>
+        </div>
+        ${r.note?`<div style="background:#fffbeb;padding:8px;border-radius:8px;font-size:12px;color:#92400e;margin-bottom:8px">📝 ${r.note}</div>`:''}
+        <button onclick="event.stopPropagation();loadForEdit('${r.pizzeria}','${r.date}')" 
+          style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-size:13px;font-weight:800;cursor:pointer">
+          ✏️ Modifica questa giornata
+        </button>
+      </div>
+    </div>`;
+  });
+
+  // Paginazione
+  html += `<div style="display:flex;gap:10px;justify-content:center;margin-top:8px">
+    <button onclick="storicoPage=Math.max(0,storicoPage-1);renderStorico(false)" 
+      ${storicoPage===0?'disabled':''} 
+      style="padding:10px 20px;border-radius:10px;border:none;background:${storicoPage===0?'#f1f5f9':'#6366f1'};color:${storicoPage===0?'#94a3b8':'#fff'};font-weight:800;cursor:${storicoPage===0?'default':'pointer'}">← Prec</button>
+    <button onclick="storicoPage=Math.min(${totPages-1},storicoPage+1);renderStorico(false)" 
+      ${storicoPage>=totPages-1?'disabled':''} 
+      style="padding:10px 20px;border-radius:10px;border:none;background:${storicoPage>=totPages-1?'#f1f5f9':'#6366f1'};color:${storicoPage>=totPages-1?'#94a3b8':'#fff'};font-weight:800;cursor:${storicoPage>=totPages-1?'default':'pointer'}">Succ →</button>
+  </div>`;
+
+  $('mainContent').innerHTML = html;
+}
+
+function toggleStoricoDetail(id){
+  const el = $(id);
+  if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+async function loadForEdit(pizzeria, date){
+  // Carica i dati nel form per modifica
+  const rows = await dbSelect('riepilogo_daily', {eq:{pizzeria, date}});
+  if(!rows||!rows.length) return;
+  const r = rows[0];
+  showTab('form');
+  setTimeout(()=>{
+    if($('f_date')) $('f_date').value = r.date;
+    if($('f_sede') && currentSede.admin) $('f_sede').value = SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)?.id || '';
+    // POS
+    if($('f_dom')) $('f_dom').value = r.pos_domicilio||0;
+    if($('f_je'))  $('f_je').value  = r.pos_just_eat||0;
+    if($('f_piz')) $('f_piz').value = r.pos_pizzeria||0;
+    if($('f_ann')) $('f_ann').value = r.annullati||0;
+    // Produzione
+    if($('f_pizze_maxi'))  $('f_pizze_maxi').value  = r.pizze_maxi||0;
+    if($('f_pizze_baby'))  $('f_pizze_baby').value  = r.pizze_baby||0;
+    if($('f_cons_je'))     $('f_cons_je').value     = r.consegne_just_eat||0;
+    if($('f_cons_piz'))    $('f_cons_piz').value    = r.consegne_pizzeria||0;
+    if($('f_pizze'))       $('f_pizze').value       = r.pizze_pizzeria||0;
+    if($('f_pizze_je'))    $('f_pizze_je').value    = r.pizze_just_eat||0;
+    if($('f_comande_pv'))  $('f_comande_pv').value  = r.comande_pv||0;
+    if($('f_num_pizze_pv'))$('f_num_pizze_pv').value= r.num_pizze_pv||0;
+    // Cassa
+    if($('f_importo_verde'))$('f_importo_verde').value = r.importo_verde||0;
+    if($('f_punto_pizza'))  $('f_punto_pizza').value   = r.punto_pizza||0;
+    if($('f_punto_je'))     $('f_punto_je').value      = r.punto_just_eat||0;
+    if($('f_inc'))          $('f_inc').value            = r.incasso||0;
+    if($('f_inc_je'))       $('f_inc_je').value         = r.incasso_just_eat||0;
+    if($('f_imp'))          $('f_imp').value            = r.chiusura_fiscale||0;
+    if($('f_cont'))         $('f_cont').value           = r.banconote||0;
+    if($('f_monete'))       $('f_monete').value         = r.monete||0;
+    if($('f_pac'))          $('f_pac').value            = r.pac||0;
+    // Spese
+    try {
+      speseItems = typeof r.spese_dettaglio==='string' ? JSON.parse(r.spese_dettaglio) : (r.spese_dettaglio||[]);
+    } catch(e){ speseItems=[]; }
+    renderSpese();
+    // Note
+    if($('f_note')) $('f_note').value = r.note||'';
+    // Ricalcola
+    calcTotale();
+    toast('📋 Dati caricati — modifica e salva!', '#6366f1');
+  }, 300);
 }
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
