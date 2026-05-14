@@ -570,6 +570,10 @@ function renderForm(){
     <div class="row2">
       <div><div class="fl">SPESE €</div><input class="fi" type="number" id="f_spese" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
+    <div style="margin-top:8px">
+      <div class="fl">VALORE MEDIO PIZZA</div>
+      <div id="f_valore_medio" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #10b981;background:#f0fdf4;color:#047857;font-size:18px;font-weight:900;text-align:center">€ 0.00</div>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">Note</div>
@@ -587,8 +591,13 @@ function renderForm(){
     const maxi  = parseInt($('f_pizze_maxi')?.value)||0;
     const tot = je + cons + pv + baby + (maxi * 2);
     if($('f_tot_pizze')) $('f_tot_pizze').textContent = tot;
+    // Valore medio pizza = incasso / totale pizze
+    const incasso = parseFloat($('f_inc')?.value)||0;
+    const vm = tot > 0 ? (incasso / tot) : 0;
+    if($('f_valore_medio')) $('f_valore_medio').textContent = '€ ' + vm.toFixed(2);
   }
-  calcFields.forEach(id => {
+  const allCalcFields = [...calcFields, 'f_inc'];
+  allCalcFields.forEach(id => {
     const el = $(id);
     if(el) el.addEventListener('input', calcTotale);
   });
