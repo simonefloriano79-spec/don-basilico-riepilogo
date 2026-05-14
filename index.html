@@ -492,6 +492,51 @@ async function renderStats(){
   $('mainContent').innerHTML = html;
 }
 
+// ─── SPESE GLOBALI ───────────────────────────────────────────────────────────
+const CATEGORIE_SPESE = ['Natural','Tutto Carta','Bevande','Verdura','Fritti','Salsiccia','Stipendi','Altro'];
+let speseItems = [];
+
+function renderSpese(){
+  const list = $('speseList');
+  if(!list) return;
+  if(speseItems.length===0){
+    list.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px 0">Nessuna spesa aggiunta</div>';
+  } else {
+    list.innerHTML = speseItems.map((s,i)=>`
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <select onchange="speseItems[${i}].cat=this.value" style="flex:1.5;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;outline:none">
+          ${CATEGORIE_SPESE.map(c=>`<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+        <input type="number" value="${s.val}" placeholder="0.00" step="0.01" inputmode="decimal"
+          onchange="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
+          oninput="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
+          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none;width:0">
+        <button onclick="removeSpesa(${i})" style="padding:6px 10px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:14px;cursor:pointer;font-weight:800;flex-shrink:0">✕</button>
+      </div>`).join('');
+  }
+  updateSpeseTotal();
+}
+
+function addSpesa(){
+  speseItems.push({cat:'Natural', val:0});
+  renderSpese();
+}
+
+function removeSpesa(i){
+  speseItems.splice(i,1);
+  renderSpese();
+}
+
+function updateSpeseTotal(){
+  const tot = speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  const el = $('speseTotal');
+  if(el) el.textContent = '€ ' + tot.toFixed(2);
+}
+
+function getSpeseTotal(){
+  return speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+}
+
 // ─── FORM ─────────────────────────────────────────────────────────────────────
 function renderForm(){
   const today=new Date().toISOString().slice(0,10);
@@ -593,51 +638,6 @@ function renderForm(){
     <textarea class="fi" id="f_note" rows="3" placeholder="Note del giorno..."></textarea>
   </div>
   <button class="save-btn" id="saveBtn" onclick="saveForm()">💾 Salva Riepilogo</button>`;
-
-  // ── SPESE DINAMICHE ──────────────────────────────
-  const CATEGORIE_SPESE = ['Natural','Tutto Carta','Bevande','Verdura','Fritti','Salsiccia','Stipendi','Altro'];
-  let speseItems = [];
-
-  function renderSpese(){
-    const list = $('speseList');
-    if(!list) return;
-    if(speseItems.length===0){
-      list.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px 0">Nessuna spesa aggiunta</div>';
-    } else {
-      list.innerHTML = speseItems.map((s,i)=>`
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-          <select onchange="speseItems[${i}].cat=this.value" style="flex:1.5;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;outline:none">
-            ${CATEGORIE_SPESE.map(c=>`<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`).join('')}
-          </select>
-          <input type="number" value="${s.val}" placeholder="0.00" step="0.01" inputmode="decimal"
-            onchange="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
-            oninput="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
-            style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none;width:0">
-          <button onclick="removeSpesa(${i})" style="padding:6px 10px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:14px;cursor:pointer;font-weight:800;flex-shrink:0">✕</button>
-        </div>`).join('');
-    }
-    updateSpeseTotal();
-  }
-
-  function addSpesa(){
-    speseItems.push({cat:'Natural', val:0});
-    renderSpese();
-  }
-
-  function removeSpesa(i){
-    speseItems.splice(i,1);
-    renderSpese();
-  }
-
-  function updateSpeseTotal(){
-    const tot = speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
-    const el = $('speseTotal');
-    if(el) el.textContent = '€ ' + tot.toFixed(2);
-  }
-
-  function getSpeseTotal(){
-    return speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
-  }
 
   speseItems = [];
   renderSpese();
