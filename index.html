@@ -167,16 +167,22 @@ async function dbSelect(table, params={}) {
 }
 
 async function dbUpsert(table, row) {
-  const url = `${SUPA_URL}/rest/v1/${table}`;
-  const r = await fetch(url, {
+  // Prima prova DELETE del record esistente, poi INSERT
+  const delUrl = `${SUPA_URL}/rest/v1/${table}?pizzeria=eq.${encodeURIComponent(row.pizzeria)}&date=eq.${row.date}`;
+  await fetch(delUrl, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Profile': 'riepiloghi' }
+  });
+  // Poi INSERT
+  const insUrl = `${SUPA_URL}/rest/v1/${table}`;
+  const r = await fetch(insUrl, {
     method: 'POST',
     headers: {
       'apikey': SUPA_KEY,
       'Authorization': `Bearer ${SUPA_KEY}`,
       'Content-Profile': 'riepiloghi',
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal,resolution=merge-duplicates',
-      'on_conflict': 'pizzeria,date'
+      'Prefer': 'return=minimal'
     },
     body: JSON.stringify(row)
   });
