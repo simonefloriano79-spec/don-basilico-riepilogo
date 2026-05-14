@@ -395,24 +395,28 @@ function renderForm(){
     </div>
     <div class="row2">
       <div><div class="fl">ANNULLATI</div><input class="fi" type="number" id="f_ann" placeholder="0" inputmode="numeric"></div>
-      <div><div class="fl">CONSEGNE</div><input class="fi" type="number" id="f_cons" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">CONS. JE</div><input class="fi" type="number" id="f_cons_je" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">CONS. PIZ</div><input class="fi" type="number" id="f_cons_piz" placeholder="0" inputmode="numeric"></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Produzione</div>
     <div class="row2">
-      <div><div class="fl">PIZZE</div><input class="fi" type="number" id="f_pizze" placeholder="0" inputmode="numeric"></div>
-      <div><div class="fl">FORMATO</div><input class="fi" type="text" id="f_formato" placeholder="8/10/12"></div>
+      <div><div class="fl">PIZZE PIZ.</div><input class="fi" type="number" id="f_pizze" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">PIZZE JE</div><input class="fi" type="number" id="f_pizze_je" placeholder="0" inputmode="numeric"></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Cassa</div>
     <div class="row2">
-      <div><div class="fl">IMPORTI €</div><input class="fi" type="number" id="f_imp" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-      <div><div class="fl">INCASSO €</div><input class="fi" type="number" id="f_inc" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">CHIUSURA FISCALE €</div><input class="fi" type="number" id="f_imp" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">INCASSO PIZ. €</div><input class="fi" type="number" id="f_inc" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
     <div class="row2">
-      <div><div class="fl">CONTANTI €</div><input class="fi" type="number" id="f_cont" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">INCASSO JE €</div><input class="fi" type="number" id="f_inc_je" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">BANCONOTE €</div><input class="fi" type="number" id="f_cont" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
       <div><div class="fl">SPESE €</div><input class="fi" type="number" id="f_spese" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
   </div>
@@ -435,12 +439,14 @@ async function saveForm(){
     pos_just_eat: parseInt($('f_je').value)||0,
     pos_pizzeria: parseInt($('f_piz').value)||0,
     annullati: parseInt($('f_ann').value)||0,
-    consegne: parseInt($('f_cons').value)||0,
-    pizze: parseInt($('f_pizze').value)||0,
-    formato_pizze: $('f_formato').value,
-    importi: parseFloat($('f_imp').value)||0,
+    consegne_just_eat: parseInt($('f_cons_je').value)||0,
+    consegne_pizzeria: parseInt($('f_cons_piz').value)||0,
+    pizze_pizzeria: parseInt($('f_pizze').value)||0,
+    pizze_just_eat: parseInt($('f_pizze_je').value)||0,
     incasso: parseFloat($('f_inc').value)||0,
-    contanti: parseFloat($('f_cont').value)||0,
+    incasso_just_eat: parseFloat($('f_inc_je').value)||0,
+    chiusura_fiscale: parseFloat($('f_imp').value)||0,
+    banconote: parseFloat($('f_cont').value)||0,
     spese: parseFloat($('f_spese').value)||0,
     note: $('f_note').value,
   };
