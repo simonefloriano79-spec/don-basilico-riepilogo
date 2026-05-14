@@ -186,7 +186,8 @@ async function dbUpsert(table, row) {
     },
     body: JSON.stringify(row)
   });
-  if(!r.ok) { const e=await r.text(); throw new Error(e); }
+  // 200, 201, 204 sono tutti OK per Supabase
+  if(r.status >= 400) { const e=await r.text(); throw new Error(e); }
   return {};
 }
 
