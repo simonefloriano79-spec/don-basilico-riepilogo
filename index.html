@@ -578,6 +578,18 @@ function renderForm(){
 async function saveForm(){
   const btn=$('saveBtn'); btn.disabled=true; btn.textContent='Salvataggio...';
   const sedeId = currentSede.admin ? $('f_sede').value : currentSede.id;
+
+  // Blocco 48h per i gestori (non admin)
+  if(!currentSede.admin) {
+    const selectedDate = new Date($('f_date').value);
+    const now = new Date();
+    const diffHours = (now - selectedDate) / (1000 * 60 * 60);
+    if(diffHours > 48) {
+      toast('⛔ Oltre 48h — solo Admin può modificare', '#ef4444');
+      btn.disabled=false; btn.textContent='💾 Salva Riepilogo';
+      return;
+    }
+  }
   const row={
     pizzeria: DB_NAME[sedeId],
     date: $('f_date').value,
