@@ -780,7 +780,10 @@ function renderForm(){
   const allCalcFields = [...calcFields, 'f_inc', 'f_inc_je', 'f_imp'];
   allCalcFields.forEach(id => {
     const el = $(id);
-    if(el) el.addEventListener('input', calcTotale);
+    if(el){ 
+      el.addEventListener('input', calcTotale);
+      el.addEventListener('change', calcTotale);
+    }
   });
   calcTotale();
 }
@@ -1116,8 +1119,10 @@ async function loadForEdit(pizzeria, date){
     renderSpese();
     // Note
     if($('f_note')) $('f_note').value = r.note||'';
-    // Ricalcola
-    calcTotale();
+    // Ricalcola tutto
+    setTimeout(()=>{
+      calcTotale();
+    }, 100);
     toast('📋 Dati caricati — modifica e salva!', '#6366f1');
   }, 300);
 }
