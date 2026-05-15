@@ -675,7 +675,7 @@ function renderForm(){
     </div>
     <div class="row2">
       <div><div class="fl">POS PIZZERIA</div><input class="fi" type="number" id="f_piz" placeholder="0" inputmode="numeric"></div>
-      <div><div class="fl">ANNULLATI</div><input class="fi" type="number" id="f_ann" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">ANNULLATI</div><input class="fi" type="number" id="f_ann" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
   </div>
   <div class="card">
@@ -818,7 +818,7 @@ async function saveForm(){
     pos_domicilio: parseInt2($('f_dom').value),
     pos_just_eat: parseInt2($('f_je').value),
     pos_pizzeria: parseInt2($('f_piz').value),
-    annullati: parseInt2($('f_ann').value),
+    annullati: parseNum($('f_ann').value),
     consegne_just_eat: parseInt2($('f_cons_je').value),
     consegne_pizzeria: parseInt2($('f_cons_piz').value),
     pizze_piatto: (parseInt2($('f_pizze_je').value)) + (parseInt2($('f_pizze').value)) + (parseInt2($('f_num_pizze_pv').value)) + (parseInt2($('f_pizze_baby').value)) + ((parseInt2($('f_pizze_maxi').value))*2),
