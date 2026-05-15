@@ -696,6 +696,9 @@ function renderForm(){
       <div><div class="fl">COMANDE PV</div><input class="fi" type="number" id="f_comande_pv" placeholder="0" inputmode="numeric"></div>
       <div><div class="fl">NUM PIZZE PV</div><input class="fi" type="number" id="f_num_pizze_pv" placeholder="0" inputmode="numeric"></div>
     </div>
+    <div class="row2">
+      <div><div class="fl">QUI (Pizze in Sala)</div><input class="fi" type="number" id="f_pizze_sala" placeholder="0" inputmode="numeric"></div>
+    </div>
     <div style="margin-top:8px">
       <div class="fl">TOTALE PIZZE GIORNALIERO</div>
       <div id="f_tot_pizze" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #6366f1;background:#f0f0ff;color:#4338ca;font-size:18px;font-weight:900;text-align:center">0</div>
@@ -751,14 +754,15 @@ function renderForm(){
   renderSpese();
 
   // Auto-calc totale pizze
-  const calcFields = ['f_pizze_je','f_pizze','f_num_pizze_pv','f_pizze_baby','f_pizze_maxi'];
+  const calcFields = ['f_pizze_je','f_pizze','f_num_pizze_pv','f_pizze_baby','f_pizze_maxi','f_pizze_sala'];
   function calcTotale(){
     const je    = parseInt2($('f_pizze_je')?.value);
     const cons  = parseInt2($('f_pizze')?.value);
     const pv    = parseInt2($('f_num_pizze_pv')?.value);
     const baby  = parseInt2($('f_pizze_baby')?.value);
     const maxi  = parseInt2($('f_pizze_maxi')?.value);
-    const tot = je + cons + pv + baby + (maxi * 2);
+    const sala  = parseInt2($('f_pizze_sala')?.value);
+    const tot = je + cons + pv + baby + (maxi * 2) + sala;
     if($('f_tot_pizze')) $('f_tot_pizze').textContent = tot;
     // Valore medio pizza = (incasso + incasso JE) / totale pizze giornaliero
     const incasso = parseNum($('f_inc')?.value) + parseNum($('f_inc_je')?.value);
@@ -821,7 +825,8 @@ async function saveForm(){
     annullati: parseNum($('f_ann').value),
     consegne_just_eat: parseInt2($('f_cons_je').value),
     consegne_pizzeria: parseInt2($('f_cons_piz').value),
-    pizze_piatto: (parseInt2($('f_pizze_je').value)) + (parseInt2($('f_pizze').value)) + (parseInt2($('f_num_pizze_pv').value)) + (parseInt2($('f_pizze_baby').value)) + ((parseInt2($('f_pizze_maxi').value))*2),
+    pizze_sala: parseInt2($('f_pizze_sala').value),
+    pizze_piatto: (parseInt2($('f_pizze_je').value)) + (parseInt2($('f_pizze').value)) + (parseInt2($('f_num_pizze_pv').value)) + (parseInt2($('f_pizze_baby').value)) + ((parseInt2($('f_pizze_maxi').value))*2) + (parseInt2($('f_pizze_sala').value)),
     pizze_maxi: parseInt2($('f_pizze_maxi').value),
     pizze_baby: parseInt2($('f_pizze_baby').value),
     consegne_just_eat: parseInt2($('f_cons_je').value),
@@ -1102,6 +1107,7 @@ async function loadForEdit(pizzeria, date){
     if($('f_pizze_je'))    $('f_pizze_je').value    = r.pizze_just_eat||0;
     if($('f_comande_pv'))  $('f_comande_pv').value  = r.comande_pv||0;
     if($('f_num_pizze_pv'))$('f_num_pizze_pv').value= r.num_pizze_pv||0;
+    if($('f_pizze_sala'))   $('f_pizze_sala').value    = r.pizze_sala||0;
     // Cassa
     if($('f_importo_verde'))$('f_importo_verde').value = r.importo_verde||0;
     if($('f_punto_pizza'))  $('f_punto_pizza').value   = r.punto_pizza||0;
