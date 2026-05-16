@@ -610,17 +610,28 @@ function renderSpese(){
   if(speseItems.length===0){
     list.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px 0">Nessuna spesa aggiunta</div>';
   } else {
-    list.innerHTML = speseItems.map((s,i)=>`
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <select onchange="speseItems[${i}].cat=this.value" style="flex:1.5;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;outline:none">
-          ${CATEGORIE_SPESE.map(c=>`<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`).join('')}
-        </select>
-        <input type="number" value="${s.val}" placeholder="0.00" step="0.01" inputmode="decimal"
-          onchange="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
-          oninput="speseItems[${i}].val=parseFloat(this.value)||0;updateSpeseTotal()"
-          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none;width:0">
-        <button onclick="removeSpesa(${i})" style="padding:6px 10px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:14px;cursor:pointer;font-weight:800;flex-shrink:0">✕</button>
-      </div>`).join('');
+    let html = '';
+    for(let i=0;i<speseItems.length;i++){
+      const s = speseItems[i];
+      const opts = CATEGORIE_SPESE.map(c=>'<option value="'+c+'"'+(s.cat===c?' selected':'')+'>'+c+'</option>').join('');
+      html += '<div style="margin-bottom:10px">';
+      html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:'+(s.cat==='Altro'?'6px':'0')+'">';
+      html += '<select onchange="speseItems['+i+'].cat=this.value;renderSpese()" style="flex:1.5;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;outline:none">'+opts+'</select>';
+      html += '<input type="number" value="'+(s.val||0)+'" placeholder="0.00" step="0.01" inputmode="decimal"';
+      html += ' onchange="speseItems['+i+'].val=parseNum(this.value);updateSpeseTotal()"';
+      html += ' oninput="speseItems['+i+'].val=parseNum(this.value);updateSpeseTotal()"';
+      html += ' style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none;width:0">';
+      html += '<button onclick="removeSpesa('+i+')" style="padding:6px 10px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:14px;cursor:pointer;font-weight:800;flex-shrink:0">✕</button>';
+      html += '</div>';
+      if(s.cat==='Altro'){
+        html += '<input type="text" value="'+(s.desc||'')+'" placeholder="Descrivi la spesa..."';
+        html += ' onchange="speseItems['+i+'].desc=this.value"';
+        html += ' oninput="speseItems['+i+'].desc=this.value"';
+        html += ' style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #6366f1;background:#f0f0ff;color:#1e293b;font-size:13px;outline:none;box-sizing:border-box">';
+      }
+      html += '</div>';
+    }
+    list.innerHTML = html;
   }
   updateSpeseTotal();
 }
