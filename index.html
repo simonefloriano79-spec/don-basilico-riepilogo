@@ -653,6 +653,67 @@ function getSpeseTotal(){
 }
 
 // ─── FORM ─────────────────────────────────────────────────────────────────────
+async function onSedeChange(sedeId){
+  // Quando admin cambia sede, carica i dati di quella sede per la data corrente
+  const dateVal = $('f_date') ? $('f_date').value : new Date().toISOString().slice(0,10);
+  const pizzeria = DB_NAME[sedeId];
+  if(!pizzeria) return;
+
+  // Svuota tutti i campi prima
+  const numFields = ['f_fc','f_ragazzi','f_dom','f_je','f_piz','f_ann',
+    'f_pizze_maxi','f_pizze_baby','f_cons_je','f_cons_piz','f_pizze','f_pizze_je',
+    'f_comande_pv','f_num_pizze_pv','f_pizze_sala',
+    'f_importo_verde','f_punto_pizza','f_punto_je','f_inc','f_inc_je',
+    'f_imp','f_cont','f_monete','f_pac'];
+  numFields.forEach(id=>{ if($(id)) $(id).value=0; });
+  if($('f_note')) $('f_note').value='';
+  speseItems=[]; renderSpese();
+  calcTotale(); updateSpeseTotal();
+
+  // Cerca se esiste già un record per questa sede+data
+  try {
+    const rows = await dbSelect('riepilogo_daily', {eq:{pizzeria, date:dateVal}});
+    if(rows && rows.length>0){
+      const r = rows[0];
+      // Carica i dati esistenti
+      if($('f_fc'))    $('f_fc').value    = r.fc||0;
+      if($('f_ragazzi')) $('f_ragazzi').value = r.ragazzi||0;
+      if($('f_dom'))   $('f_dom').value   = r.pos_domicilio||0;
+      if($('f_je'))    $('f_je').value    = r.pos_just_eat||0;
+      if($('f_piz'))   $('f_piz').value   = r.pos_pizzeria||0;
+      if($('f_ann'))   $('f_ann').value   = r.annullati||0;
+      if($('f_pizze_maxi'))   $('f_pizze_maxi').value   = r.pizze_maxi||0;
+      if($('f_pizze_baby'))   $('f_pizze_baby').value   = r.pizze_baby||0;
+      if($('f_cons_je'))      $('f_cons_je').value      = r.consegne_just_eat||0;
+      if($('f_cons_piz'))     $('f_cons_piz').value     = r.consegne_pizzeria||0;
+      if($('f_pizze'))        $('f_pizze').value        = r.pizze_pizzeria||0;
+      if($('f_pizze_je'))     $('f_pizze_je').value     = r.pizze_just_eat||0;
+      if($('f_comande_pv'))   $('f_comande_pv').value   = r.comande_pv||0;
+      if($('f_num_pizze_pv')) $('f_num_pizze_pv').value = r.num_pizze_pv||0;
+      if($('f_pizze_sala'))   $('f_pizze_sala').value   = r.pizze_sala||0;
+      if($('f_importo_verde')) $('f_importo_verde').value = r.importo_verde||0;
+      if($('f_punto_pizza'))  $('f_punto_pizza').value  = r.punto_pizza||0;
+      if($('f_punto_je'))     $('f_punto_je').value     = r.punto_just_eat||0;
+      if($('f_inc'))          $('f_inc').value          = r.incasso||0;
+      if($('f_inc_je'))       $('f_inc_je').value       = r.incasso_just_eat||0;
+      if($('f_imp'))          $('f_imp').value          = r.chiusura_fiscale||0;
+      if($('f_cont'))         $('f_cont').value         = r.banconote||0;
+      if($('f_monete'))       $('f_monete').value       = r.monete||0;
+      if($('f_pac'))          $('f_pac').value          = r.pac||0;
+      if($('f_note'))         $('f_note').value         = r.note||'';
+      try { speseItems = typeof r.spese_dettaglio==='string' ? JSON.parse(r.spese_dettaglio) : (r.spese_dettaglio||[]); } catch(e){ speseItems=[]; }
+      renderSpese();
+      toast('📋 Dati di '+sedeId.replace(/_/g,' ')+' caricati!', '#6366f1');
+    } else {
+      toast('✏️ Nessun dato per questa sede — inserimento nuovo', '#f59e0b');
+    }
+    setTimeout(()=>{ calcTotale(); updateSpeseTotal(); }, 100);
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+
 function renderForm(){
   const today=new Date().toISOString().slice(0,10);
   const isAdmin=currentSede.admin;
@@ -661,7 +722,7 @@ function renderForm(){
   $('mainContent').innerHTML=`
   ${isAdmin?`<div class="card"><div class="card-title">Sede</div>
     <div class="fl">PIZZERIA</div>
-    <select class="fi" id="f_sede">${sedeOpts}</select>
+    <select class="fi" id="f_sede" onchange="onSedeChange(this.value)">${sedeOpts}</select>
   </div>`:''}
   <div class="card">
     <div class="card-title">Data</div>
