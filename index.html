@@ -169,28 +169,22 @@ async function dbSelect(table, params={}) {
 }
 
 async function dbUpsert(table, row) {
-  // Prima DELETE poi INSERT per evitare problemi con upsert
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer '+SUPA_KEY,
+    'Content-Type': 'application/json'
+  };
+  // DELETE record esistente
   const delUrl = SUPA_URL+'/rest/v1/'+table+'?pizzeria=eq.'+encodeURIComponent(row.pizzeria)+'&date=eq.'+row.date;
-  await fetch(delUrl, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer '+SUPA_KEY,
-      'Content-Profile': 'public'
-    }
-  });
+  const delRes = await fetch(delUrl, {method:'DELETE', headers});
+  console.log('DELETE status:', delRes.status, 'pizzeria:', row.pizzeria, 'date:', row.date);
+  // INSERT nuovo record
   const insUrl = SUPA_URL+'/rest/v1/'+table;
-  const r = await fetch(insUrl, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer '+SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(row)
-  });
-  if(r.status >= 400) { const e=await r.text(); throw new Error(e); }
+  const insHeaders = {...headers, 'Prefer':'return=minimal'};
+  const r = await fetch(insUrl, {method:'POST', headers:insHeaders, body:JSON.stringify(row)});
+  const txt = await r.text();
+  console.log('INSERT status:', r.status, txt.slice(0,100));
+  if(r.status >= 400) throw new Error(txt);
   return {};
 }
 
