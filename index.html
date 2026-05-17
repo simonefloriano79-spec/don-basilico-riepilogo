@@ -1421,7 +1421,8 @@ async function renderAdmin(){
   rows.slice(0,20).forEach(function(r){
     const s = SEDI.find(function(x){return DB_NAME[x.id]===r.pizzeria;})||{color:'#6366f1',emoji:'🍕',name:r.pizzeria};
     const inc = (parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0);
-    html += '<div class="row-item" onclick="loadForEdit(''+r.pizzeria+'',''+r.date+'')" style="cursor:pointer">';
+    const onclick2 = 'loadForEdit('+JSON.stringify(r.pizzeria)+','+JSON.stringify(r.date)+')';
+    html += '<div class="row-item" onclick="'+onclick2+'" style="cursor:pointer">';
     html += '<div><div style="font-size:13px;font-weight:800;color:#0f172a">'+r.date+'</div>';
     html += '<span class="badge" style="background:'+s.color+'22;color:'+s.color+'">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</span></div>';
     html += '<div style="text-align:right"><div style="font-weight:900;color:#0f172a">€'+fmt(inc)+'</div>';
