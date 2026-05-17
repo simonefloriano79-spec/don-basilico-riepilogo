@@ -647,7 +647,9 @@ function removeSpesa(i){
 }
 
 function updateSpeseTotal(){
-  const tot = speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  const speseSum = speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  const ragazzi = parseNum($('f_ragazzi')?.value);
+  const tot = speseSum + ragazzi;
   const el = $('speseTotal');
   if(el) el.textContent = '€ ' + tot.toFixed(2);
 }
@@ -674,8 +676,8 @@ function renderForm(){
   <div class="card">
     <div class="card-title">Personale</div>
     <div class="row2">
-      <div><div class="fl">FC</div><input class="fi" type="number" id="f_fc" placeholder="0" inputmode="numeric"></div>
-      <div><div class="fl">RAGAZZI</div><input class="fi" type="number" id="f_ragazzi" placeholder="0" inputmode="numeric"></div>
+      <div><div class="fl">FC</div><input class="fi" type="number" id="f_fc" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div><div class="fl">RAGAZZI</div><input class="fi" type="number" id="f_ragazzi" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     </div>
   </div>
   <div class="card">
@@ -763,6 +765,12 @@ function renderForm(){
 
   speseItems = [];
   renderSpese();
+  // Aggiorna totale spese quando cambia ragazzi
+  const ragazziEl = $('f_ragazzi');
+  if(ragazziEl){
+    ragazziEl.addEventListener('input', updateSpeseTotal);
+    ragazziEl.addEventListener('change', updateSpeseTotal);
+  }
 
   // Auto-calc totale pizze
   const calcFields = ['f_pizze_je','f_pizze','f_num_pizze_pv','f_pizze_baby','f_pizze_maxi','f_pizze_sala'];
@@ -828,8 +836,8 @@ async function saveForm(){
   const row={
     pizzeria: DB_NAME[sedeId],
     date: $('f_date').value,
-    fc: parseInt2($('f_fc').value),
-    ragazzi: parseInt2($('f_ragazzi').value),
+    fc: parseNum($('f_fc').value),
+    ragazzi: parseNum($('f_ragazzi').value),
     pos_domicilio: parseNum($('f_dom').value),
     pos_just_eat: parseNum($('f_je').value),
     pos_pizzeria: parseNum($('f_piz').value),
