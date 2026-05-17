@@ -885,6 +885,7 @@ let storicoAll = [];
 let storicoView = 'lista'; // 'lista' o 'calendario'
 let storicoCalMonth = new Date().getMonth();
 let storicoCalYear = new Date().getFullYear();
+let storicoSedeFiltro = ''; // filtro sede per admin
 
 async function renderStorico(reload=true){
   const isAdmin = currentSede.admin;
@@ -892,11 +893,15 @@ async function renderStorico(reload=true){
     $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
     try {
       const params = {order:'date.desc', limit:500};
-      if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
+      if(!isAdmin) {
+        params.eq = {pizzeria: DB_NAME[currentSede.id]};
+      } else if(storicoSedeFiltro) {
+        params.eq = {pizzeria: storicoSedeFiltro};
+      }
       storicoAll = await dbSelect('riepilogo_daily', params);
       storicoPage = 0;
     } catch(e) {
-      $('mainContent').innerHTML=`<div class="card"><p style="color:#ef4444">${e.message}</p></div>`;
+      $('mainContent').innerHTML='<div class="card"><p style="color:#ef4444">'+e.message+'</p></div>';
       return;
     }
   }
@@ -907,7 +912,15 @@ async function renderStorico(reload=true){
   }
 
   // Toggle lista/calendario
-  const toggleHtml = `<div style="display:flex;gap:8px;margin-bottom:12px">
+  // Sede filter per admin
+  let sedeFilterHtml = '';
+  if(isAdmin){
+    const opts = '<option value="">— Tutte le sedi —</option>' + 
+      SEDI.filter(s=>!s.admin).map(s=>'<option value="'+DB_NAME[s.id]+'"'+(storicoSedeFiltro===DB_NAME[s.id]?' selected':'')+'>'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</option>').join('');
+    sedeFilterHtml = '<div style="margin-bottom:12px"><select onchange="storicoSedeFiltro=this.value;renderStorico(true)" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none">'+opts+'</select></div>';
+  }
+
+  const toggleHtml = sedeFilterHtml + `<div style="display:flex;gap:8px;margin-bottom:12px">
     <button onclick="storicoView='lista';renderStorico(false)" style="flex:1;padding:9px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${storicoView==='lista'?'#6366f1':'#f1f5f9'};color:${storicoView==='lista'?'#fff':'#64748b'}">📋 Lista</button>
     <button onclick="storicoView='calendario';renderStorico(false)" style="flex:1;padding:9px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${storicoView==='calendario'?'#6366f1':'#f1f5f9'};color:${storicoView==='calendario'?'#fff':'#64748b'}">📅 Calendario</button>
   </div>`;
