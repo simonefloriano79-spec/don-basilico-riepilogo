@@ -1111,6 +1111,8 @@ async function loadForEdit(pizzeria, date){
   showTab('form');
   setTimeout(()=>{
     if($('f_date')) $('f_date').value = r.date;
+    if($('f_fc'))   $('f_fc').value   = r.fc||0;
+    if($('f_ragazzi')) $('f_ragazzi').value = r.ragazzi||0;
     if($('f_sede') && currentSede.admin) $('f_sede').value = SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)?.id || '';
     // POS
     if($('f_dom')) $('f_dom').value = r.pos_domicilio||0;
@@ -1144,12 +1146,13 @@ async function loadForEdit(pizzeria, date){
     renderSpese();
     // Note
     if($('f_note')) $('f_note').value = r.note||'';
-    // Ricalcola tutto
+    // Ricalcola tutto dopo che il DOM è aggiornato
     setTimeout(()=>{
-      calcTotale();
+      if(typeof calcTotale === 'function') calcTotale();
+      if(typeof updateSpeseTotal === 'function') updateSpeseTotal();
     }, 100);
     toast('📋 Dati caricati — modifica e salva!', '#6366f1');
-  }, 300);
+  }, 500);
 }
 
 // ─── ORDINI ──────────────────────────────────────────────────────────────────
