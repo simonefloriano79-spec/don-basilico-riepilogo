@@ -1363,28 +1363,80 @@ function resetOrdine(){
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
 async function renderAdmin(){
   $('mainContent').innerHTML='<div style="color:#64748b;padding:30px;text-align:center">⏳ Caricamento...</div>';
-  let rows=[];
-  try { rows = await dbSelect('riepilogo_daily', {order:'date.desc', limit:500}); } catch(e) {}
-  
-  const totale=rows?.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0)||0;
-  let html=`<div class="card"><div class="card-title">Riepilogo Generale</div>
-    <div class="row-item"><span style="color:#94a3b8;font-size:13px">Totale giorni inseriti</span><span style="color:#f1f5f9;font-weight:800">${rows?.length||0}</span></div>
-    <div class="row-item"><span style="color:#94a3b8;font-size:13px">Incasso totale storico</span><span style="color:#10b981;font-weight:900;font-size:15px">€${fmt(totale)}</span></div>
-  </div>`;
 
-  // PIN correnti
-  html+=`<div class="card"><div class="card-title">PIN Sedi</div>`;
-  SEDI.filter(s=>!s.admin).forEach(s=>{
-    html+=`<div class="row-item">
-      <span class="badge" style="background:${s.color}22;color:${s.color}">${s.emoji} ${s.name}</span>
-      <span style="font-family:monospace;font-size:16px;font-weight:900;color:#f1f5f9;background:#0f172a;padding:4px 12px;border-radius:8px">${s.pin}</span>
-    </div>`;
+  let rows = [];
+  try {
+    rows = await dbSelect('riepilogo_daily', {order:'date.desc', limit:1000});
+  } catch(e) {
+    $('mainContent').innerHTML='<div class="card"><p style="color:#ef4444">'+e.message+'</p></div>';
+    return;
+  }
+
+  const oggi = new Date();
+  const oggiStr = oggi.toISOString().slice(0,10);
+  const ultimi7 = [];
+  for(let i=6;i>=0;i--){ const d=new Date(oggi); d.setDate(d.getDate()-i); ultimi7.push(d.toISOString().slice(0,10)); }
+
+  let html = '';
+
+  // OGGI
+  html += '<div class="card"><div class="card-title">📊 Stato Inserimenti — Oggi '+oggiStr+'</div>';
+  SEDI.filter(s=>!s.admin).forEach(function(s){
+    const r = rows.find(function(x){return x.pizzeria===DB_NAME[s.id]&&x.date===oggiStr;});
+    html += '<div class="row-item">';
+    html += '<span class="badge" style="background:'+s.color+'22;color:'+s.color+'">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</span>';
+    html += '<span style="font-size:13px;font-weight:800;color:'+(r?'#10b981':'#ef4444')+'">'+(r?'✅ Inserito':'❌ Mancante')+'</span>';
+    html += '</div>';
   });
-  html+=`<div style="font-size:11px;color:#64748b;margin-top:12px;padding-top:8px;border-top:1px solid #334155">
-    I PIN si cambiano direttamente nel codice sorgente (index.html → array SEDI)
-  </div></div>`;
+  html += '</div>';
 
-  $('mainContent').innerHTML=html;
+  // ULTIMI 7 GIORNI
+  html += '<div class="card"><div class="card-title">📅 Ultimi 7 Giorni per Sede</div>';
+  html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html += '<tr><th style="text-align:left;padding:5px 3px;color:#94a3b8">SEDE</th>';
+  ultimi7.forEach(function(d){ html += '<th style="text-align:center;padding:5px 3px;color:#94a3b8">'+d.slice(5)+'</th>'; });
+  html += '</tr>';
+  SEDI.filter(s=>!s.admin).forEach(function(s){
+    html += '<tr><td style="padding:5px 3px;font-weight:700;color:#0f172a;font-size:11px;white-space:nowrap">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</td>';
+    ultimi7.forEach(function(d){
+      const r = rows.find(function(x){return x.pizzeria===DB_NAME[s.id]&&x.date===d;});
+      const futuro = d>oggiStr;
+      const bg = futuro?'#f8fafc':r?'#dcfce7':'#fee2e2';
+      const col = futuro?'#94a3b8':r?'#166534':'#991b1b';
+      const sym = futuro?'':r?'✓':'✗';
+      html += '<td onclick="'+(r?'loadForEdit(''+r.pizzeria+'',''+d+'')':'')+'" style="text-align:center;padding:5px 3px;background:'+bg+';border-radius:4px;font-weight:800;color:'+col+';cursor:'+(r?'pointer':'default')+'">'+sym+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</table></div>';
+  html += '<div style="font-size:10px;color:#94a3b8;margin-top:8px">✓ clicca su un giorno inserito per aprirlo</div>';
+  html += '</div>';
+
+  // ULTIMI INSERIMENTI
+  html += '<div class="card"><div class="card-title">🕐 Ultimi 20 Inserimenti</div>';
+  rows.slice(0,20).forEach(function(r){
+    const s = SEDI.find(function(x){return DB_NAME[x.id]===r.pizzeria;})||{color:'#6366f1',emoji:'🍕',name:r.pizzeria};
+    const inc = (parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0);
+    html += '<div class="row-item" onclick="loadForEdit(''+r.pizzeria+'',''+r.date+'')" style="cursor:pointer">';
+    html += '<div><div style="font-size:13px;font-weight:800;color:#0f172a">'+r.date+'</div>';
+    html += '<span class="badge" style="background:'+s.color+'22;color:'+s.color+'">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</span></div>';
+    html += '<div style="text-align:right"><div style="font-weight:900;color:#0f172a">€'+fmt(inc)+'</div>';
+    html += '<div style="font-size:11px;color:#64748b">'+(r.pizze_piatto||0)+' pizze</div></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // PIN
+  html += '<div class="card"><div class="card-title">🔑 PIN Sedi</div>';
+  SEDI.filter(s=>!s.admin).forEach(function(s){
+    html += '<div class="row-item">';
+    html += '<span class="badge" style="background:'+s.color+'22;color:'+s.color+'">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</span>';
+    html += '<span style="font-family:monospace;font-size:16px;font-weight:900;color:#0f172a;background:#f1f5f9;padding:4px 12px;border-radius:8px">'+s.pin+'</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  $('mainContent').innerHTML = html;
 }
 
 // INIT
