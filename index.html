@@ -1407,7 +1407,8 @@ async function renderAdmin(){
       const bg = futuro?'#f8fafc':r?'#dcfce7':'#fee2e2';
       const col = futuro?'#94a3b8':r?'#166534':'#991b1b';
       const sym = futuro?'':r?'✓':'✗';
-      html += '<td onclick="'+(r?'loadForEdit(''+r.pizzeria+'',''+d+'')':'')+'" style="text-align:center;padding:5px 3px;background:'+bg+';border-radius:4px;font-weight:800;color:'+col+';cursor:'+(r?'pointer':'default')+'">'+sym+'</td>';
+      const onclick = r ? 'loadForEdit('+JSON.stringify(r.pizzeria)+','+JSON.stringify(d)+')' : '';
+      html += '<td onclick="'+onclick+'" style="text-align:center;padding:5px 3px;background:'+bg+';border-radius:4px;font-weight:800;color:'+col+';cursor:'+(r?'pointer':'default')+'">'+sym+'</td>';
     });
     html += '</tr>';
   });
