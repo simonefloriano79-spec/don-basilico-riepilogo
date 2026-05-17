@@ -1113,7 +1113,20 @@ async function loadForEdit(pizzeria, date){
     if($('f_date')) $('f_date').value = r.date;
     if($('f_fc'))   $('f_fc').value   = r.fc||0;
     if($('f_ragazzi')) $('f_ragazzi').value = r.ragazzi||0;
-    if($('f_sede') && currentSede.admin) $('f_sede').value = SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)?.id || '';
+    // Imposta la sede corretta
+    if($('f_sede') && currentSede.admin) {
+      const sedeId = SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)?.id || '';
+      $('f_sede').value = sedeId;
+      // Mostra banner con sede caricata
+      const sedeTrovata = SEDI.find(s=>s.id===sedeId);
+      if(sedeTrovata) {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:70px;left:0;right:0;z-index:999;background:'+sedeTrovata.color+';color:#fff;text-align:center;padding:10px;font-weight:800;font-size:14px';
+        banner.textContent = '📋 Stai modificando: '+sedeTrovata.emoji+' '+sedeTrovata.name.replace('Don Basilico - ','')+' — '+r.date;
+        document.body.appendChild(banner);
+        setTimeout(()=>banner.remove(), 4000);
+      }
+    }
     // POS
     if($('f_dom')) $('f_dom').value = r.pos_domicilio||0;
     if($('f_je'))  $('f_je').value  = r.pos_just_eat||0;
