@@ -1523,9 +1523,10 @@ async function renderAdmin(){
   });
   html += '</div>';
 
-  // PIN
+  // PIN - admin vede tutti, gestore vede solo il suo
   html += '<div class="card"><div class="card-title">🔑 PIN Sedi</div>';
-  SEDI.filter(s=>!s.admin).forEach(function(s){
+  const sediDaMonstrare = isAdmin ? SEDI.filter(s=>!s.admin) : [currentSede];
+  sediDaMonstrare.forEach(function(s){
     html += '<div class="row-item">';
     html += '<span class="badge" style="background:'+s.color+'22;color:'+s.color+'">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</span>';
     html += '<span style="font-family:monospace;font-size:16px;font-weight:900;color:#0f172a;background:#f1f5f9;padding:4px 12px;border-radius:8px" id="pin_'+s.id+'">••••</span>';
@@ -1539,7 +1540,9 @@ async function renderAdmin(){
 
 async function mostraPIN(){
   try {
-    const res = await fetch(SUPA_URL+'/rest/v1/sedi_pin?select=id,pin', {
+    const isAdmin = currentSede.admin;
+    const filtro = isAdmin ? '' : '&id=eq.'+currentSede.id;
+    const res = await fetch(SUPA_URL+'/rest/v1/sedi_pin?select=id,pin'+filtro, {
       headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY}
     });
     const pins = await res.json();
