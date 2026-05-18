@@ -707,7 +707,7 @@ async function onSedeChange(sedeId){
     } else {
       toast('✏️ Nessun dato per questa sede — inserimento nuovo', '#f59e0b');
     }
-    setTimeout(()=>{ calcTotale(); updateSpeseTotal(); }, 100);
+    setTimeout(()=>{ calcTotale(); updateSpeseTotal(); }, 300);
   } catch(e) {
     console.error(e);
   }
@@ -820,6 +820,7 @@ function renderForm(){
 
   speseItems = [];
   renderSpese();
+  setTimeout(()=>{ calcTotale(); updateSpeseTotal(); }, 50);
   // Aggiorna totale spese quando cambia ragazzi
   const ragazziEl = $('f_ragazzi');
   if(ragazziEl){
@@ -830,29 +831,29 @@ function renderForm(){
   // Auto-calc totale pizze
   const calcFields = ['f_pizze_je','f_pizze','f_num_pizze_pv','f_pizze_baby','f_pizze_maxi','f_pizze_sala'];
   function calcTotale(){
-    const je    = parseInt2($('f_pizze_je')?.value);
-    const cons  = parseInt2($('f_pizze')?.value);
-    const pv    = parseInt2($('f_num_pizze_pv')?.value);
-    const baby  = parseInt2($('f_pizze_baby')?.value);
-    const maxi  = parseInt2($('f_pizze_maxi')?.value);
-    const sala  = parseInt2($('f_pizze_sala')?.value);
-    const tot = je + cons + pv + baby + (maxi * 2) + sala;
-    if($('f_tot_pizze')) $('f_tot_pizze').textContent = tot;
-    // Valore medio pizza = (incasso + incasso JE) / totale pizze giornaliero
-    const incasso = parseNum($('f_inc')?.value) + parseNum($('f_inc_je')?.value);
-    const vm = tot > 0 ? (incasso / tot) : 0;
-    if($('f_valore_medio')) $('f_valore_medio').textContent = '€ ' + vm.toFixed(2);
-    // B/N = (incasso - chiusura fiscale) / chiusura fiscale * 100
-    const chiusura = parseNum($('f_imp')?.value);
-    const bn = chiusura > 0 ? Math.abs((incasso - chiusura) / chiusura * 100) : 0;
-    const bnEl = $('f_bn');
-    if(bnEl) {
-      bnEl.textContent = bn.toFixed(2) + '%';
-      if(bn < 30) {
-        bnEl.style.borderColor='#10b981'; bnEl.style.background='#f0fdf4'; bnEl.style.color='#047857';
-      } else {
-        bnEl.style.borderColor='#ef4444'; bnEl.style.background='#fef2f2'; bnEl.style.color='#991b1b';
-      }
+    const g = function(id){ var el=document.getElementById(id); return el?el.value:'0'; };
+    const je   = parseInt2(g('f_pizze_je'));
+    const cons = parseInt2(g('f_pizze'));
+    const pv   = parseInt2(g('f_num_pizze_pv'));
+    const baby = parseInt2(g('f_pizze_baby'));
+    const maxi = parseInt2(g('f_pizze_maxi'));
+    const sala = parseInt2(g('f_pizze_sala'));
+    const tot  = je + cons + pv + baby + (maxi*2) + sala;
+    var totEl = document.getElementById('f_tot_pizze');
+    if(totEl) totEl.textContent = tot;
+    var incasso = parseNum(g('f_inc')) + parseNum(g('f_inc_je'));
+    var vm = tot>0 ? (incasso/tot) : 0;
+    var vmEl = document.getElementById('f_valore_medio');
+    if(vmEl) vmEl.textContent = '€ '+vm.toFixed(2);
+    var chiusura = parseNum(g('f_imp'));
+    var bn = chiusura>0 ? Math.abs((parseNum(g('f_inc'))-chiusura)/chiusura*100) : 0;
+    var bnEl = document.getElementById('f_bn');
+    if(bnEl){
+      bnEl.textContent = bn.toFixed(2)+'%';
+      if(bn<30){ bnEl.style.borderColor='#10b981';bnEl.style.background='#f0fdf4';bnEl.style.color='#047857'; }
+      else{ bnEl.style.borderColor='#ef4444';bnEl.style.background='#fef2f2';bnEl.style.color='#991b1b'; }
+    }
+  }
     }
   }
   const allCalcFields = [...calcFields, 'f_inc', 'f_inc_je', 'f_imp'];
@@ -1231,7 +1232,7 @@ async function loadForEdit(pizzeria, date){
     setTimeout(()=>{
       if(typeof calcTotale === 'function') calcTotale();
       if(typeof updateSpeseTotal === 'function') updateSpeseTotal();
-    }, 100);
+    }, 300);
     toast('📋 Dati caricati — modifica e salva!', '#6366f1');
   }, 500);
 }
