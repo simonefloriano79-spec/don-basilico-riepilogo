@@ -191,13 +191,13 @@ async function dbUpsert(table, row) {
 // ─── SEDI + PIN ───────────────────────────────────────────────────────────────
 // PIN: cambia questi come vuoi!
 const SEDI = [
-  { id:'pescara_centro',  name:'Pescara Centro',  emoji:'🏙️', color:'#6366f1', pin:'3418', admin:false },
-  { id:'centro_marconi',  name:'Centro Marconi',  emoji:'🛒', color:'#10b981', pin:'2073', admin:false },
-  { id:'montesilvano',    name:'Montesilvano',    emoji:'🌊', color:'#f59e0b', pin:'6996', admin:false },
-  { id:'chieti',          name:'Chieti',          emoji:'⛪', color:'#ef4444', pin:'9963', admin:false },
-  { id:'universita',      name:'Università',      emoji:'🎓', color:'#8b5cf6', pin:'9908', admin:false },
-  { id:'pescara_nord',    name:'Pescara Nord',    emoji:'🧭', color:'#06b6d4', pin:'8334', admin:false },
-  { id:'admin',           name:'Admin',           emoji:'👑', color:'#f59e0b', pin:'5943', admin:true  },
+  { id:'pescara_centro',  name:'Pescara Centro',  emoji:'🏙️', color:'#6366f1', admin:false },
+  { id:'centro_marconi',  name:'Centro Marconi',  emoji:'🛒', color:'#10b981', admin:false },
+  { id:'montesilvano',    name:'Montesilvano',    emoji:'🌊', color:'#f59e0b', admin:false },
+  { id:'chieti',          name:'Chieti',          emoji:'⛪', color:'#ef4444', admin:false },
+  { id:'universita',      name:'Università',      emoji:'🎓', color:'#8b5cf6', admin:false },
+  { id:'pescara_nord',    name:'Pescara Nord',    emoji:'🧭', color:'#06b6d4', admin:false },
+  { id:'admin',           name:'Admin',           emoji:'👑', color:'#f59e0b', admin:true  },
 ];
 
 const DB_NAME = { // mappa id → nome nel DB
@@ -260,15 +260,26 @@ function updateDots(){
   }
 }
 
-function checkPin(){
-  if(pinBuffer===currentSede.pin){
-    $('pinErr').style.display='none';
-    enterApp();
-  } else {
-    for(let i=0;i<4;i++) { const d=$('d'+i); d.classList.remove('filled'); d.classList.add('error'); }
-    $('pinErr').textContent='PIN errato. Riprova.';
+async function checkPin(){
+  // Verifica PIN lato server (i PIN non sono nel codice)
+  try {
+    const res = await fetch(SUPA_URL+'/rest/v1/sedi_pin?id=eq.'+currentSede.id+'&pin=eq.'+pinBuffer+'&select=id', {
+      headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY}
+    });
+    const data = await res.json();
+    if(data && data.length > 0){
+      $('pinErr').style.display='none';
+      enterApp();
+    } else {
+      for(let i=0;i<4;i++) { const d=$('d'+i); d.classList.remove('filled'); d.classList.add('error'); }
+      $('pinErr').textContent='PIN errato. Riprova.';
+      $('pinErr').style.display='block';
+      setTimeout(()=>{ pinBuffer=''; updateDots(); $('pinErr').style.display='none'; },1000);
+    }
+  } catch(e) {
+    $('pinErr').textContent='Errore di connessione. Riprova.';
     $('pinErr').style.display='block';
-    setTimeout(()=>{ pinBuffer=''; updateDots(); $('pinErr').style.display='none'; },1000);
+    setTimeout(()=>{ pinBuffer=''; updateDots(); $('pinErr').style.display='none'; },1500);
   }
 }
 
@@ -589,6 +600,7 @@ async function renderStats(){
       </div>
     </div>`;
   });
+  html += '<button onclick="mostraPIN()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#f1f5f9;color:#64748b;font-size:13px;font-weight:700;cursor:pointer">👁 Mostra PIN</button>';
   html += '</div>';
 
   $('mainContent').innerHTML = html;
@@ -1516,12 +1528,26 @@ async function renderAdmin(){
   SEDI.filter(s=>!s.admin).forEach(function(s){
     html += '<div class="row-item">';
     html += '<span class="badge" style="background:'+s.color+'22;color:'+s.color+'">'+s.emoji+' '+s.name.replace('Don Basilico - ','')+'</span>';
-    html += '<span style="font-family:monospace;font-size:16px;font-weight:900;color:#0f172a;background:#f1f5f9;padding:4px 12px;border-radius:8px">'+s.pin+'</span>';
+    html += '<span style="font-family:monospace;font-size:16px;font-weight:900;color:#0f172a;background:#f1f5f9;padding:4px 12px;border-radius:8px" id="pin_'+s.id+'">••••</span>';
     html += '</div>';
   });
+  html += '<button onclick="mostraPIN()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#f1f5f9;color:#64748b;font-size:13px;font-weight:700;cursor:pointer">👁 Mostra PIN</button>';
   html += '</div>';
 
   $('mainContent').innerHTML = html;
+}
+
+async function mostraPIN(){
+  try {
+    const res = await fetch(SUPA_URL+'/rest/v1/sedi_pin?select=id,pin', {
+      headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer '+SUPA_KEY}
+    });
+    const pins = await res.json();
+    pins.forEach(p=>{
+      const el = document.getElementById('pin_'+p.id);
+      if(el) el.textContent = p.pin;
+    });
+  } catch(e) { toast('Errore caricamento PIN','#ef4444'); }
 }
 
 // INIT
