@@ -1524,6 +1524,7 @@ async function renderAdmin(){
   html += '</div>';
 
   // PIN - admin vede tutti, gestore vede solo il suo
+  const isAdmin = currentSede.admin;
   html += '<div class="card"><div class="card-title">🔑 PIN Sedi</div>';
   const sediDaMonstrare = isAdmin ? SEDI.filter(s=>!s.admin) : [currentSede];
   sediDaMonstrare.forEach(function(s){
