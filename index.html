@@ -504,10 +504,17 @@ async function renderStats(){
 
   // ── SPESE PER CATEGORIA ──
   const spesePerCat = {};
+  const speseAltroDettaglio = []; // per mostrare descrizioni di "Altro"
   rows.forEach(r=>{
+    // Aggiungi ragazzi e fc come spese
+    if(parseFloat(r.ragazzi)||0) spesePerCat['Ragazzi']=(spesePerCat['Ragazzi']||0)+(parseFloat(r.ragazzi)||0);
+    if(parseFloat(r.fc)||0) spesePerCat['FC (Fondo Cassa)']=(spesePerCat['FC (Fondo Cassa)']||0)+(parseFloat(r.fc)||0);
     try {
       const det = typeof r.spese_dettaglio==='string' ? JSON.parse(r.spese_dettaglio) : (r.spese_dettaglio||[]);
-      det.forEach(s=>{ spesePerCat[s.cat]=(spesePerCat[s.cat]||0)+(parseFloat(s.val)||0); });
+      det.forEach(s=>{
+        const key = s.cat==='Altro' && s.desc ? 'Altro: '+s.desc : s.cat;
+        spesePerCat[key]=(spesePerCat[key]||0)+(parseFloat(s.val)||0);
+      });
     } catch(e){}
   });
   if(Object.keys(spesePerCat).length>0){
@@ -653,15 +660,19 @@ function removeSpesa(i){
 }
 
 function updateSpeseTotal(){
-  const speseSum = speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
-  const ragazzi = parseNum($('f_ragazzi')?.value);
-  const tot = speseSum + ragazzi;
-  const el = $('speseTotal');
+  const speseSum = speseItems.reduce((s,x)=>s+(parseNum(x.val)||0),0);
+  const ragazzi = parseNum(document.getElementById('f_ragazzi')?.value);
+  const fc = parseNum(document.getElementById('f_fc')?.value);
+  const tot = speseSum + ragazzi + fc;
+  const el = document.getElementById('speseTotal');
   if(el) el.textContent = '€ ' + tot.toFixed(2);
 }
 
 function getSpeseTotal(){
-  return speseItems.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  const speseSum = speseItems.reduce((s,x)=>s+(parseNum(x.val)||0),0);
+  const ragazzi = parseNum(document.getElementById('f_ragazzi')?.value);
+  const fc = parseNum(document.getElementById('f_fc')?.value);
+  return speseSum + ragazzi + fc;
 }
 
 // ─── FORM ─────────────────────────────────────────────────────────────────────
