@@ -719,7 +719,7 @@ async function onSedeChange(sedeId){
     } else {
       toast('✏️ Nessun dato per questa sede — inserimento nuovo', '#1e3a5f');
     }
-    setTimeout(()=>{ calcTotale(); updateSpeseTotal(); }, 300);
+    calcTotale(); updateSpeseTotal();
   } catch(e) {
     console.error(e);
   }
@@ -1238,11 +1238,9 @@ async function loadForEdit(pizzeria, date){
     renderSpese();
     // Note
     if($('f_note')) $('f_note').value = r.note||'';
-    // Ricalcola tutto dopo che il DOM è aggiornato
-    setTimeout(()=>{
-      if(typeof calcTotale === 'function') calcTotale();
-      if(typeof updateSpeseTotal === 'function') updateSpeseTotal();
-    }, 300);
+    // Ricalcola immediatamente — i campi sono già nel DOM
+    calcTotale();
+    updateSpeseTotal();
     toast('Dati caricati — modifica e salva!', '#1e3a5f');
   }, 500);
 }
