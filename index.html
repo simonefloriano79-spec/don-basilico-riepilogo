@@ -252,7 +252,7 @@ function updateDots(){
   }
 }
 
-async function checkPin(){
+async async function checkPin(){
   // Verifica PIN lato server (i PIN non sono nel codice)
   try {
     const res = await fetch(SUPA_URL+'/rest/v1/sedi_pin?id=eq.'+currentSede.id+'&pin=eq.'+pinBuffer+'&select=id', {
