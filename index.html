@@ -265,6 +265,396 @@ function checkPin(){
   }
 }
 
+function enterApp(){
+  $('loginBg').style.display='none';
+  $('app').style.display='flex';
+  $('topSede').textContent = currentSede.name;
+  $('topSede').style.color = currentSede.color;
+  if(currentSede.admin){
+    if(!$('tab-admin')){
+      $('tabsBar').innerHTML += '<div class="tab" onclick="showTab(\'admin\')" id="tab-admin">Admin</div>';
+    }
+  }
+  showTab('stats');
+}
+
+function doLogout(){
+  currentSede=null; pinBuffer='';
+  $('app').style.display='none';
+  $('loginBg').style.display='flex';
+  $('stepPin').style.display='none';
+  $('stepSede').style.display='block';
+  updateDots();
+}
+
+function showTab(t){
+  currentTab=t;
+  ['stats','form','admin'].forEach(x=>{
+    const el=$('tab-'+x); if(el) el.classList.remove('active');
+  });
+  const el=$('tab-'+t); if(el) el.classList.add('active');
+  if(t==='stats') renderStats();
+  else if(t==='storico') renderStorico();
+  else if(t==='form') renderForm();
+  else if(t==='ordini') renderOrdini();
+  else if(t==='admin') renderAdmin();
+}
+
+function toast(msg,color='#16a34a'){
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg; t.style.background=color;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2500);
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+let statsPeriod = 'mese';
+let statsCustomFrom = '';
+let statsCustomTo = '';
+
+function getPeriodDates(period) {
+  const now = new Date();
+  const to = now.toISOString().slice(0,10);
+  let from;
+  if(period==='7gg')    { const d=new Date(now); d.setDate(d.getDate()-7);      from=d.toISOString().slice(0,10); }
+  else if(period==='mese')  { const d=new Date(now); d.setDate(d.getDate()-30);     from=d.toISOString().slice(0,10); }
+  else if(period==='3mesi') { const d=new Date(now); d.setMonth(d.getMonth()-3);    from=d.toISOString().slice(0,10); }
+  else if(period==='anno')  { const d=new Date(now); d.setFullYear(d.getFullYear()-1); from=d.toISOString().slice(0,10); }
+  else if(period==='tutto') { from='2020-01-01'; }
+  else if(period==='custom'){ from=statsCustomFrom; }
+  return {from, to: period==='custom' ? statsCustomTo : to};
+}
+
+function svgLine(rows, valFn, color, W=320, H=100){
+  if(rows.length<2) return '';
+  const vals = rows.map(valFn);
+  const maxV = Math.max(...vals,1);
+  const PAD=8;
+  const pts = rows.map((r,i)=>{
+    const x=PAD+(i/(rows.length-1))*(W-PAD*2);
+    const y=H-PAD-(vals[i]/maxV)*(H-PAD*2);
+    return `${x},${y}`;
+  }).join(' ');
+  const area = `${PAD},${H-PAD} ${pts} ${W-PAD},${H-PAD}`;
+  const id = 'g'+Math.random().toString(36).slice(2,6);
+  // Labels: first, middle, last
+  const labelIdxs = [0, Math.floor(rows.length/2), rows.length-1];
+  const labels = labelIdxs.map(i=>{
+    const x=PAD+(i/(rows.length-1))*(W-PAD*2);
+    return `<text x="${x}" y="${H+2}" font-size="8" fill="#94a3b8" text-anchor="middle">${rows[i].date.slice(5)}</text>`;
+  }).join('');
+  return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+    <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+  </linearGradient></defs>
+  <polygon points="${area}" fill="url(#${id})"/>
+  <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+  ${labels}`;
+}
+
+async function renderStats(){
+  const isAdmin = currentSede.admin;
+  const {from, to} = getPeriodDates(statsPeriod);
+
+  const periods = ['7gg','mese','3mesi','anno','tutto','custom'];
+  const periodLabels = {'7gg':'7 giorni','mese':'Mese','3mesi':'3 mesi','anno':'Anno','tutto':'Tutto','custom':'Custom'};
+  let periodHtml = `<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;${statsPeriod==='custom'?'margin-bottom:12px':''}">
+      ${periods.map(p=>`<button onclick="statsPeriod='${p}';renderStats()" style="padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:${statsPeriod===p?'#1e3a5f':'#f3f4f6'};color:${statsPeriod===p?'#fff':'#6b7280'}">${periodLabels[p]}</button>`).join('')}
+    </div>
+    ${statsPeriod==='custom'?`<div style="display:flex;gap:8px">
+      <input class="fi" type="date" value="${statsCustomFrom}" onchange="statsCustomFrom=this.value;renderStats()" style="flex:1">
+      <input class="fi" type="date" value="${statsCustomTo}" onchange="statsCustomTo=this.value;renderStats()" style="flex:1">
+    </div>`:''}
+  </div>`;
+
+  $('mainContent').innerHTML = periodHtml + '<div style="color:#64748b;padding:20px;text-align:center">Caricamento...</div>';
+
+  let rows = [];
+  try {
+    const params = {order:'date.asc', limit:500};
+    if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
+    rows = await dbSelect('riepilogo_daily', params);
+    rows = rows.filter(r => r.date >= from && r.date <= to);
+  } catch(e) {
+    $('mainContent').innerHTML = periodHtml + `<div class="card"><p style="color:#ef4444">${e.message}</p></div>`;
+    return;
+  }
+
+  if(!rows.length){
+    $('mainContent').innerHTML = periodHtml + '<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato nel periodo selezionato</div>';
+    return;
+  }
+
+  // ── CALCOLI ──
+  const totInc     = rows.reduce((s,r)=>s+(parseFloat(r.incasso)||0),0);
+  const totIncJE   = rows.reduce((s,r)=>s+(parseFloat(r.incasso_just_eat)||0),0);
+  const totIncTot  = totInc + totIncJE;
+  const totPizze   = rows.reduce((s,r)=>s+(parseInt(r.pizze_piatto)||0),0);
+  const totPizPiz  = rows.reduce((s,r)=>s+(parseInt(r.pizze_pizzeria)||0),0);
+  const totPizJE   = rows.reduce((s,r)=>s+(parseInt(r.pizze_just_eat)||0),0);
+  const totPizMaxi = rows.reduce((s,r)=>s+(parseInt(r.pizze_maxi)||0),0);
+  const totPizBaby = rows.reduce((s,r)=>s+(parseInt(r.pizze_baby)||0),0);
+  const totConsPiz = rows.reduce((s,r)=>s+(parseInt(r.consegne_pizzeria)||0),0);
+  const totConsJE  = rows.reduce((s,r)=>s+(parseInt(r.consegne_just_eat)||0),0);
+  const totSpese   = rows.reduce((s,r)=>s+(parseFloat(r.spese)||0),0);
+  const totComande = rows.reduce((s,r)=>s+(parseInt(r.comande_pv)||0),0);
+  const giorni     = rows.length;
+  const mediaGiorno = giorni>0 ? totIncTot/giorni : 0;
+  const vmPizza    = totPizze>0 ? totIncTot/totPizze : 0;
+  const bnAvg      = rows.reduce((s,r)=>{
+    const inc=parseFloat(r.incasso)||0, cf=parseFloat(r.chiusura_fiscale)||0;
+    return s+(cf>0?Math.abs((inc-cf)/cf*100):0);
+  },0) / Math.max(giorni,1);
+
+  let html = periodHtml;
+
+  // ── KPI PRINCIPALI ──
+  html += `<div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-val">€${fmt(totIncTot)}</div>
+      <div class="stat-lbl">Incasso Totale</div><div class="stat-sub">${giorni} giorni</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">€${fmt(mediaGiorno)}</div>
+      <div class="stat-lbl">Media/Giorno</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">€${fmt(totInc)}</div>
+      <div class="stat-lbl">Incasso Pizzeria</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">€${fmt(totIncJE)}</div>
+      <div class="stat-lbl">Incasso Just Eat</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">${fmt(totPizze)}</div>
+      <div class="stat-lbl">Pizze Totali</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">€${vmPizza.toFixed(2)}</div>
+      <div class="stat-lbl">Valore Medio Pizza</div>
+    </div>
+    <div class="stat-card" style="border-color:${bnAvg<30?'#10b98133':'#ef444433'}">
+      <div class="stat-val" style="color:${bnAvg<30?'#10b981':'#ef4444'}">${bnAvg.toFixed(1)}%</div>
+      <div class="stat-lbl">B/N Medio</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">€${fmt(totSpese)}</div>
+      <div class="stat-lbl">Spese Totali</div>
+    </div>
+  </div>`;
+
+  // ── GRAFICO INCASSO ──
+  if(rows.length>1){
+    const W=320,H=110;
+    html += `<div class="card">
+      <div class="card-title">📈 Incasso nel Tempo</div>
+      <svg viewBox="0 0 ${W} ${H+12}" style="width:100%;overflow:visible">
+        ${svgLine(rows,r=>(parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0),'#3b5bdb',W,H)}
+      </svg>
+    </div>`;
+  }
+
+  // ── GRAFICI PIZZE ──
+  if(rows.length>1){
+    const W=320,H=90;
+    html += `<div class="card">
+      <div class="card-title">Pizze nel Tempo</div>
+      <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:#d97706">● Pizzeria</span>
+        <span style="font-size:11px;font-weight:700;color:#dc2626">● Just Eat</span>
+      </div>
+      <svg viewBox="0 0 ${W} ${H+12}" style="width:100%;overflow:visible">
+        ${svgLine(rows,r=>parseInt(r.pizze_pizzeria)||0,'#d97706',W,H)}
+        ${svgLine(rows,r=>parseInt(r.pizze_just_eat)||0,'#dc2626',W,H)}
+      </svg>
+    </div>`;
+  }
+
+  // ── DETTAGLIO PIZZE ──
+  html += `<div class="card">
+    <div class="card-title">Dettaglio Pizze</div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Pizze Pizzeria</span><span style="font-weight:800;color:#111827">${fmt(totPizPiz)}</span></div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Pizze Just Eat</span><span style="font-weight:800;color:#111827">${fmt(totPizJE)}</span></div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Pizze Maxi</span><span style="font-weight:800;color:#111827">${fmt(totPizMaxi)}</span></div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Pizze Baby</span><span style="font-weight:800;color:#111827">${fmt(totPizBaby)}</span></div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Consegne Pizzeria</span><span style="font-weight:800;color:#111827">${fmt(totConsPiz)}</span></div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Consegne Just Eat</span><span style="font-weight:800;color:#111827">${fmt(totConsJE)}</span></div>
+    <div class="row-item"><span style="color:#64748b;font-size:13px">Comande PV</span><span style="font-weight:800;color:#111827">${fmt(totComande)}</span></div>
+  </div>`;
+
+  // ── SPESE PER CATEGORIA ──
+  const spesePerCat = {};
+  const speseAltroDettaglio = []; // per mostrare descrizioni di "Altro"
+  rows.forEach(r=>{
+    // Aggiungi ragazzi e fc come spese
+    if(parseFloat(r.ragazzi)||0) spesePerCat['Ragazzi']=(spesePerCat['Ragazzi']||0)+(parseFloat(r.ragazzi)||0);
+    try {
+      const det = typeof r.spese_dettaglio==='string' ? JSON.parse(r.spese_dettaglio) : (r.spese_dettaglio||[]);
+      det.forEach(s=>{
+        const key = s.cat==='Altro' && s.desc ? 'Altro: '+s.desc : s.cat;
+        spesePerCat[key]=(spesePerCat[key]||0)+(parseFloat(s.val)||0);
+      });
+    } catch(e){}
+  });
+  if(Object.keys(spesePerCat).length>0){
+    html += `<div class="card"><div class="card-title">Spese per Categoria</div>`;
+    const maxSpesa = Math.max(...Object.values(spesePerCat),1);
+    Object.entries(spesePerCat).sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
+      const pct = val/maxSpesa*100;
+      html += `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:700;color:#1e293b">${cat}</span>
+          <span style="font-size:12px;font-weight:900;color:#1e293b">€${fmt(val)}</span>
+        </div>
+        <div style="background:#f1f5f9;border-radius:6px;height:6px">
+          <div style="background:#1e3a5f;width:${pct}%;height:100%;border-radius:6px"></div>
+        </div>
+      </div>`;
+    });
+    html += `<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid #f1f5f9">
+      <span style="font-size:12px;font-weight:700;color:#64748b">TOTALE</span>
+      <span style="font-size:14px;font-weight:900;color:#1e3a5f">€${fmt(totSpese)}</span>
+    </div></div>`;
+  }
+
+  // ── CONFRONTO SEDI (admin) ──
+  if(isAdmin){
+    html += `<div class="card"><div class="card-title">🏪 Confronto Sedi</div>`;
+    const sedeStats = SEDI.filter(s=>!s.admin).map(s=>{
+      const r2=rows.filter(r=>r.pizzeria===DB_NAME[s.id]);
+      const inc=r2.reduce((a,r)=>a+(parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0),0);
+      const pizze=r2.reduce((a,r)=>a+(parseInt(r.pizze_piatto)||0),0);
+      const spese=r2.reduce((a,r)=>a+(parseFloat(r.spese)||0),0);
+      return {s, inc, pizze, spese, giorni:r2.length};
+    }).sort((a,b)=>b.inc-a.inc);
+    const maxInc = Math.max(...sedeStats.map(x=>x.inc),1);
+    sedeStats.forEach(({s,inc,pizze,spese,giorni:gg})=>{
+      if(!gg) return;
+      const pct=inc/maxInc*100;
+      html+=`<div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:700;color:#111827">${s.name}</span>
+          <span style="font-size:13px;font-weight:900;color:#111827">€${fmt(inc)}</span>
+        </div>
+        <div style="background:#f1f5f9;border-radius:6px;height:8px;margin-bottom:4px">
+          <div style="background:${s.color};width:${pct}%;height:100%;border-radius:6px"></div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:10px;color:#64748b">
+          <span>${gg}gg</span>
+          <span>media €${fmt(gg>0?inc/gg:0)}/gg</span>
+          <span>${fmt(pizze)} pizze</span>
+          <span>spese €${fmt(spese)}</span>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+
+    // ── GRAFICO CONFRONTO INCASSO SEDI ──
+    if(rows.length>1){
+      const W=320,H=110;
+      html += `<div class="card">
+        <div class="card-title">Incasso Sedi nel Tempo</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          ${SEDI.filter(s=>!s.admin).map(s=>`<span style="font-size:10px;font-weight:700;color:${s.color}">● ${s.name.replace('Don Basilico - ','')}</span>`).join('')}
+        </div>
+        <svg viewBox="0 0 ${W} ${H+12}" style="width:100%;overflow:visible">
+          ${SEDI.filter(s=>!s.admin).map(s=>{
+            const r2=rows.filter(r=>r.pizzeria===DB_NAME[s.id]);
+            if(r2.length<2) return '';
+            return svgLine(r2,r=>(parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0),s.color,W,H);
+          }).join('')}
+        </svg>
+      </div>`;
+    }
+  }
+
+  // ── ULTIMI INSERIMENTI ──
+  html += `<div class="card"><div class="card-title">🕐 Ultimi Inserimenti</div>`;
+  [...rows].reverse().slice(0,10).forEach(r=>{
+    const sede=SEDI.find(s=>DB_NAME[s.id]===r.pizzeria)||{color:'#1e3a5f',emoji:'',name:r.pizzeria};
+    const inc=(parseFloat(r.incasso)||0)+(parseFloat(r.incasso_just_eat)||0);
+    const pizze=parseInt(r.pizze_piatto)||0;
+    const bn = (parseFloat(r.chiusura_fiscale)||0)>0 ? Math.abs(((parseFloat(r.incasso)||0)-(parseFloat(r.chiusura_fiscale)||0))/(parseFloat(r.chiusura_fiscale)||1)*100) : 0;
+    html+=`<div class="row-item">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:#111827">${r.date}</div>
+        ${isAdmin?`<span class="badge" style="background:${sede.color}22;color:${sede.color}">${sede.name.replace('Don Basilico - ','')}</span>`:''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:900;color:#111827">€${fmt(inc)}</div>
+        <div style="font-size:11px;color:#64748b">${fmt(pizze)} pizze · B/N <span style="color:${bn<30?'#10b981':'#ef4444'};font-weight:700">${bn.toFixed(1)}%</span></div>
+      </div>
+    </div>`;
+  });
+  html += '<button onclick="mostraPIN()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#f1f5f9;color:#64748b;font-size:13px;font-weight:700;cursor:pointer">👁 Mostra PIN</button>';
+  html += '</div>';
+
+  $('mainContent').innerHTML = html;
+}
+
+// ─── SPESE GLOBALI ───────────────────────────────────────────────────────────
+const CATEGORIE_SPESE = ['Natural','Tutto Carta','Bevande','Verdura','Fritti','Salsiccia','Stipendi','Contado','Mozzarella','Altro'];
+let speseItems = [];
+
+function renderSpese(){
+  const list = $('speseList');
+  if(!list) return;
+  if(speseItems.length===0){
+    list.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px 0">Nessuna spesa aggiunta</div>';
+  } else {
+    let html = '';
+    for(let i=0;i<speseItems.length;i++){
+      const s = speseItems[i];
+      const opts = CATEGORIE_SPESE.map(c=>'<option value="'+c+'"'+(s.cat===c?' selected':'')+'>'+c+'</option>').join('');
+      html += '<div style="margin-bottom:10px">';
+      html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:'+(s.cat==='Altro'?'6px':'0')+'">';
+      html += '<select onchange="speseItems['+i+'].cat=this.value;renderSpese()" style="flex:1.5;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;outline:none">'+opts+'</select>';
+      html += '<input type="number" value="'+(s.val||0)+'" placeholder="0.00" step="0.01" inputmode="decimal"';
+      html += ' onchange="speseItems['+i+'].val=parseNum(this.value);updateSpeseTotal()"';
+      html += ' oninput="speseItems['+i+'].val=parseNum(this.value);updateSpeseTotal()"';
+      html += ' style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:14px;font-weight:700;outline:none;width:0">';
+      html += '<button onclick="removeSpesa('+i+')" style="padding:6px 10px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:14px;cursor:pointer;font-weight:800;flex-shrink:0">✕</button>';
+      html += '</div>';
+      if(s.cat==='Altro'){
+        html += '<input type="text" value="'+(s.desc||'')+'" placeholder="Descrivi la spesa..."';
+        html += ' onchange="speseItems['+i+'].desc=this.value"';
+        html += ' oninput="speseItems['+i+'].desc=this.value"';
+        html += ' style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #1e3a5f;background:#eef4ff;color:#1e293b;font-size:13px;outline:none;box-sizing:border-box">';
+      }
+      html += '</div>';
+    }
+    list.innerHTML = html;
+  }
+  updateSpeseTotal();
+}
+
+function addSpesa(){
+  speseItems.push({cat:'Natural', val:0});
+  renderSpese();
+}
+
+function removeSpesa(i){
+  speseItems.splice(i,1);
+  renderSpese();
+}
+
+function updateSpeseTotal(){
+  const speseSum = speseItems.reduce((s,x)=>s+(parseNum(x.val)||0),0);
+  const ragazzi = parseNum(document.getElementById('f_ragazzi')?.value);
+  const tot = speseSum + ragazzi;
+  const el = document.getElementById('speseTotal');
+  if(el) el.textContent = '€ ' + tot.toFixed(2);
+}
+
+function getSpeseTotal(){
+  const speseSum = speseItems.reduce((s,x)=>s+(parseNum(x.val)||0),0);
+  const ragazzi = parseNum(document.getElementById('f_ragazzi')?.value);
+  return speseSum + ragazzi;
+}
+
+// ─── FORM ─────────────────────────────────────────────────────────────────────
 async function onSedeChange(sedeId){
   // Quando admin cambia sede, carica i dati di quella sede per la data corrente
   const dateVal = $('f_date') ? $('f_date').value : new Date().toISOString().slice(0,10);
