@@ -374,15 +374,18 @@ async function renderStats(){
   try {
     const params = {order:'date.asc', limit:500};
     if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
-    rows = await dbSelect('riepilogo_daily', params);
-    rows = rows.filter(r => r.date >= from && r.date <= to);
+    const rawRows = await dbSelect('riepilogo_daily', params);
+    console.log('dbSelect raw rows:', rawRows.length, 'from:', from, 'to:', to);
+    rows = rawRows.filter(r => r.date >= from && r.date <= to);
+    console.log('filtered rows:', rows.length);
   } catch(e) {
-    $('mainContent').innerHTML = periodHtml + `<div class="card"><p style="color:#ef4444">${e.message}</p></div>`;
+    console.error('renderStats error:', e);
+    $('mainContent').innerHTML = periodHtml + '<div class="card"><p style="color:#ef4444">Errore: '+e.message+'</p></div>';
     return;
   }
 
   if(!rows.length){
-    $('mainContent').innerHTML = periodHtml + '<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato nel periodo selezionato</div>';
+    $('mainContent').innerHTML = periodHtml + '<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato (raw: '+( typeof rawRows !== 'undefined' ? rawRows.length : '?')+ ' record, filtrati: 0 nel periodo '+from+' / '+to+')</div>';
     return;
   }
 
