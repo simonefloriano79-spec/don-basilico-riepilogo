@@ -372,20 +372,22 @@ async function renderStats(){
 
   let rows = [];
   try {
+    // Fetch diretto per debug
+    const testUrl = SUPA_URL+'/rest/v1/riepilogo_daily?select=id,date&order=date.desc&limit=5';
+    const testRes = await fetch(testUrl, {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const testText = await testRes.text();
+    
     const params = {order:'date.asc', limit:500};
     if(!isAdmin) params.eq = {pizzeria: DB_NAME[currentSede.id]};
-    const rawRows = await dbSelect('riepilogo_daily', params);
-    console.log('dbSelect raw rows:', rawRows.length, 'from:', from, 'to:', to);
-    rows = rawRows.filter(r => r.date >= from && r.date <= to);
-    console.log('filtered rows:', rows.length);
+    rows = await dbSelect('riepilogo_daily', params);
+    rows = rows.filter(r => r.date >= from && r.date <= to);
+    
+    if(!rows.length){
+      $('mainContent').innerHTML = periodHtml + '<div class="card" style="padding:20px"><p style="color:#ef4444;font-weight:700">DEBUG INFO:</p><p>HTTP status: '+testRes.status+'</p><p>Risposta API (5 record): '+testText.slice(0,500)+'</p><p>Period: '+from+' → '+to+'</p><p>isAdmin: '+isAdmin+'</p></div>';
+      return;
+    }
   } catch(e) {
-    console.error('renderStats error:', e);
     $('mainContent').innerHTML = periodHtml + '<div class="card"><p style="color:#ef4444">Errore: '+e.message+'</p></div>';
-    return;
-  }
-
-  if(!rows.length){
-    $('mainContent').innerHTML = periodHtml + '<div class="card" style="text-align:center;padding:40px;color:#64748b">Nessun dato (raw: '+( typeof rawRows !== 'undefined' ? rawRows.length : '?')+ ' record, filtrati: 0 nel periodo '+from+' / '+to+')</div>';
     return;
   }
 
