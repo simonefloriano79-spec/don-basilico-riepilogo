@@ -321,7 +321,11 @@ function getPeriodDates(period) {
   else if(period==='3mesi') { const d=new Date(now); d.setMonth(d.getMonth()-3);    from=d.toISOString().slice(0,10); }
   else if(period==='anno')  { const d=new Date(now); d.setFullYear(d.getFullYear()-1); from=d.toISOString().slice(0,10); }
   else if(period==='tutto') { from='2020-01-01'; }
-  else if(period==='custom'){ from=statsCustomFrom; }
+  else if(period==='custom'){
+    if(!statsCustomFrom){ const d=new Date(now); d.setDate(d.getDate()-30); statsCustomFrom=d.toISOString().slice(0,10); }
+    if(!statsCustomTo){ statsCustomTo=to; }
+    from=statsCustomFrom;
+  }
   return {from, to: period==='custom' ? statsCustomTo : to};
 }
 
@@ -1135,7 +1139,8 @@ function renderCalendario(rows){
     const row = rows.find(r=>r.date===dateStr);
     const incasso = row ? (parseFloat(row.incasso)||0)+(parseFloat(row.incasso_just_eat)||0) : 0;
 
-    html += `<div onclick="${isInserito?`loadForEdit('${row?.pizzeria}','${dateStr}')`:isMancante?`loadNewForm('${dateStr}')`:''}" 
+    const pizzeriaPerNuovo = storicoSedeFiltro || (!currentSede.admin ? DB_NAME[currentSede.id] : '');
+    html += `<div onclick="${isInserito?`loadForEdit('${row?.pizzeria}','${dateStr}')`:isMancante?`loadNewForm('${dateStr}','${pizzeriaPerNuovo}')`:''}"
       style="border-radius:8px;border:2px solid ${border};background:${bg};padding:6px 4px;text-align:center;cursor:${isFuturo?'default':'pointer'};min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center">
       <div style="font-size:13px;font-weight:${isOggi?'900':'700'};color:${color}">${d}</div>
       ${isInserito?`<div style="font-size:9px;font-weight:700;color:#166534;margin-top:2px">€${fmt(incasso)}</div>`:''}
@@ -1162,9 +1167,20 @@ function renderCalendario(rows){
   return html;
 }
 
-function loadNewForm(date){
+function loadNewForm(date, pizzeria){
   showTab('form');
-  setTimeout(()=>{ if($('f_date')) $('f_date').value=date; toast('Data preimpostata!','#1e3a5f'); },300);
+  if($('f_date')) $('f_date').value = date;
+  if(pizzeria && currentSede.admin && $('f_sede')){
+    const sedeId = Object.keys(DB_NAME).find(k=>DB_NAME[k]===pizzeria);
+    if(sedeId && $('f_sede').value !== sedeId){
+      $('f_sede').value = sedeId;
+      onSedeChange(sedeId);
+      if($('f_date')) $('f_date').value = date;
+    }
+  }
+  calcTotale();
+  updateSpeseTotal();
+  toast('Data preimpostata!','#1e3a5f');
 }
 
 function toggleStoricoDetail(id){
